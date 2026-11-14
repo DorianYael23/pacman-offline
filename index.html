@@ -32,29 +32,96 @@
         </div>
       </header>
 
-      <div class="canvas-container">
+      <div id="canvas-container" class="canvas-container">
         <canvas id="gameCanvas" width="456" height="504"></canvas>
 
         <div id="overlay" class="overlay">
           <h1 id="overlay-title">PAC-MAN</h1>
           <p id="overlay-subtitle">
-            Usa las flechas, WASD o el joystick para moverte
+            Desliza el dedo, usa el joystick o flechas
           </p>
           <button id="start-btn" class="btn-primary">JUGAR</button>
         </div>
       </div>
 
-      <div class="toolbar">
-        <button id="pause-btn" class="btn-secondary" title="Tecla P">
-          Pausar (P)
+      <div class="toolbar" role="group" aria-label="Opciones del juego">
+        <button id="pause-btn" class="arcade-btn" title="Tecla P">
+          <span class="btn-top">
+            <svg
+              class="btn-icon"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <rect x="6" y="4" width="4" height="16" rx="1.5" />
+              <rect x="14" y="4" width="4" height="16" rx="1.5" />
+            </svg>
+            <span class="status-dot"></span>
+          </span>
+          <span class="btn-text">
+            <span id="pause-label">Pausar</span>
+          </span>
         </button>
-        <button id="mute-btn" class="btn-secondary" title="Tecla M">
-          Sonido: ON (M)
+
+        <button id="mute-btn" class="arcade-btn" title="Tecla M">
+          <span class="btn-top">
+            <svg
+              class="btn-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <polygon
+                points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"
+                fill="currentColor"
+              />
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+            </svg>
+            <span class="status-dot"></span>
+          </span>
+          <span class="btn-text">
+            <span id="mute-label">Sonido ON</span>
+          </span>
+        </button>
+
+        <button
+          id="control-mode-btn"
+          class="arcade-btn"
+          title="Cambiar control táctil"
+        >
+          <span class="btn-top">
+            <svg
+              class="btn-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <circle cx="12" cy="12" r="3" fill="currentColor" />
+            </svg>
+            <span class="status-dot"></span>
+          </span>
+          <span class="btn-text">
+            <span id="control-label">Dedo</span>
+          </span>
         </button>
       </div>
 
       <!-- Joystick táctil para móvil / tablet -->
-      <div class="joystick-zone" aria-label="Joystick táctil">
+      <div
+        id="joystick-zone"
+        class="joystick-zone hidden"
+        aria-label="Joystick táctil"
+      >
         <div id="joystick-base" class="joystick-base">
           <div id="joystick-knob" class="joystick-knob"></div>
         </div>

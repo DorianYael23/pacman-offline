@@ -1,9 +1,12 @@
 :root {
   --bg: #090d16;
   --panel: #111827;
+  --panel-light: #182236;
   --border: #1e293b;
   --accent: #facc15;
   --neon-blue: #3b82f6;
+  --danger: #ef4444;
+  --success: #22c55e;
   --text: #f8fafc;
   --muted: #94a3b8;
 }
@@ -16,6 +19,11 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+html,
+body {
+  overscroll-behavior: none;
+}
+
 body {
   background: radial-gradient(circle at top, #131c31 0%, var(--bg) 70%);
   color: var(--text);
@@ -25,6 +33,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 12px;
+  touch-action: none;
 }
 
 .arcade-wrapper {
@@ -77,12 +86,14 @@ body {
   border-radius: 12px;
   box-shadow: 0 0 25px rgba(59, 130, 246, 0.25);
   overflow: hidden;
+  touch-action: none;
 }
 
 canvas {
   display: block;
   width: 100%;
   height: 100%;
+  touch-action: none;
 }
 
 .overlay {
@@ -134,31 +145,137 @@ canvas {
   filter: brightness(1.08);
 }
 
+/* Barra de opciones estilizada tipo consola arcade */
 .toolbar {
-  display: flex;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  width: 100%;
 }
 
-.btn-secondary {
-  background: var(--panel);
+.arcade-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: linear-gradient(180deg, var(--panel-light) 0%, var(--panel) 100%);
   color: var(--text);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 8px 14px;
-  font-size: 0.82rem;
-  font-weight: 600;
+  border-radius: 12px;
+  padding: 9px 8px;
   cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: transform 0.1s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
 }
 
-.btn-secondary:hover {
-  border-color: var(--neon-blue);
+.arcade-btn:hover {
+  border-color: rgba(59, 130, 246, 0.65);
+  box-shadow: 0 0 14px rgba(59, 130, 246, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
+.arcade-btn:active {
+  transform: scale(0.96);
+}
+
+.btn-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-icon {
+  width: 17px;
+  height: 17px;
+  color: var(--neon-blue);
+  transition: color 0.15s ease;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 6px var(--success);
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-text {
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--text);
+}
+
+.kbd-hint {
+  display: none;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.7rem;
+}
+
+@media (min-width: 768px) {
+  .kbd-hint {
+    display: inline;
+  }
+}
+
+/* Estados visuales de los botones */
+#pause-btn .status-dot {
+  background: var(--neon-blue);
+  box-shadow: 0 0 6px var(--neon-blue);
+}
+
+#pause-btn.is-paused {
+  border-color: rgba(250, 204, 21, 0.6);
+  box-shadow: 0 0 12px rgba(250, 204, 21, 0.18);
+}
+
+#pause-btn.is-paused .btn-icon {
+  color: var(--accent);
+}
+
+#pause-btn.is-paused .status-dot {
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
+
+#mute-btn.is-muted .btn-icon {
+  color: var(--muted);
+}
+
+#mute-btn.is-muted .status-dot {
+  background: var(--danger);
+  box-shadow: 0 0 6px var(--danger);
+}
+
+#mute-btn.is-muted .btn-text {
+  color: var(--muted);
+}
+
+#control-mode-btn.is-alt {
+  border-color: rgba(250, 204, 21, 0.55);
+}
+
+#control-mode-btn.is-alt .btn-icon {
+  color: var(--accent);
+}
+
+#control-mode-btn.is-alt .status-dot {
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
+
+/* Joystick táctil */
 .joystick-zone {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 6px;
+  margin-top: 4px;
+}
+
+.joystick-zone.hidden {
+  display: none;
 }
 
 .joystick-base {
@@ -197,10 +314,4 @@ canvas {
 
 .joystick-base.active .joystick-knob {
   transition: none;
-}
-
-@media (min-width: 768px) {
-  .joystick-zone {
-    display: none;
-  }
 }

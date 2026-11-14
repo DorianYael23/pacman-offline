@@ -11,6 +11,11 @@ const overlaySubEl = document.getElementById("overlay-subtitle");
 const startBtn = document.getElementById("start-btn");
 const pauseBtn = document.getElementById("pause-btn");
 const muteBtn = document.getElementById("mute-btn");
+const controlModeBtn = document.getElementById("control-mode-btn");
+const joystickZone = document.getElementById("joystick-zone");
+const pauseLabelEl = document.getElementById("pause-label");
+const muteLabelEl = document.getElementById("mute-label");
+const controlLabelEl = document.getElementById("control-label");
 
 const TILE = 24;
 const COLS = 19;
@@ -130,7 +135,7 @@ const LEVELS = [
     }
 ];
 
-// Motor de audio offline híbrido (MP3 reales + síntesis arcade limpia)
+// Motor de audio offline híbrido (MP3 reales + síntesis arcade con sirena de fondo dinámica)
 class SoundEngine {
     constructor() {
         this.ctx = null;
@@ -138,12 +143,19 @@ class SoundEngine {
         this.chompToggle = false;
         this.samples = {};
 
-        // Nodos para controlar y cortar la intro al instante
         this.introOscs = [];
         this.introGain = null;
         this.introPlaying = false;
 
-        // Nodos para la sirena en bucle
+        // Sirena de fondo normal (acelera conforme quedan menos puntos)
+        this.bgOsc = null;
+        this.bgLfo = null;
+        this.bgLfoGain = null;
+        this.bgGain = null;
+        this.bgBaseVol = 0.042;
+        this.isDucked = false;
+
+        // Sirena cuando los fantasmas son vulnerables
         this.powerBuffer = null;
         this.powerSource = null;
         this.powerGain = null;
@@ -218,26 +230,100 @@ class SoundEngine {
         }
     }
 
-    duckPowerSiren(ms = 185) {
+    // Prioridad de canal: silencia brevemente la sirena activa mientras Pac-Man come puntos
+    duckSirens(ms = 185) {
         clearTimeout(this.duckTimer);
+        this.isDucked = true;
+
+        if (this.bgGain && this.ctx) {
+            this.bgGain.gain.setTargetAtTime(0.0, this.ctx.currentTime, 0.008);
+        }
 
         if (this.powerGain && this.ctx) {
             this.powerGain.gain.setTargetAtTime(0.0, this.ctx.currentTime, 0.008);
-            this.duckTimer = setTimeout(() => {
-                if (this.powerGain && this.ctx && !this.muted) {
-                    this.powerGain.gain.setTargetAtTime(0.5, this.ctx.currentTime, 0.015);
-                }
-            }, ms);
         }
 
         if (this.powerFallbackAudio) {
             this.powerFallbackAudio.volume = 0;
-            this.duckTimer = setTimeout(() => {
-                if (this.powerFallbackAudio && !this.muted) {
-                    this.powerFallbackAudio.volume = 0.5;
-                }
-            }, ms);
         }
+
+        this.duckTimer = setTimeout(() => {
+            this.isDucked = false;
+            if (this.muted) return;
+
+            if (this.bgGain && this.ctx) {
+                this.bgGain.gain.setTargetAtTime(this.bgBaseVol, this.ctx.currentTime, 0.025);
+            }
+            if (this.powerGain && this.ctx) {
+                this.powerGain.gain.setTargetAtTime(0.5, this.ctx.currentTime, 0.015);
+            }
+            if (this.powerFallbackAudio) {
+                this.powerFallbackAudio.volume = 0.5;
+            }
+        }, ms);
+    }
+
+    // Sirena de fondo clásica de pasillos vacíos
+    startBgSiren(progress = 0) {
+        if (this.muted || !this.ctx || this.bgOsc) return;
+
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const lfo = this.ctx.createOscillator();
+        const lfoGain = this.ctx.createGain();
+        const masterGain = this.ctx.createGain();
+
+        osc.type = "triangle";
+        lfo.type = "sine";
+
+        const baseFreq = 112 + progress * 65;
+        const lfoRate = 1.65 + progress * 2.1;
+        const depth = 20 + progress * 14;
+
+        osc.frequency.setValueAtTime(baseFreq, now);
+        lfo.frequency.setValueAtTime(lfoRate, now);
+        lfoGain.gain.setValueAtTime(depth, now);
+        masterGain.gain.setValueAtTime(this.isDucked ? 0 : this.bgBaseVol, now);
+
+        lfo.connect(lfoGain);
+        lfoGain.connect(osc.frequency);
+        osc.connect(masterGain);
+        masterGain.connect(this.ctx.destination);
+
+        osc.start(now);
+        lfo.start(now);
+
+        this.bgOsc = osc;
+        this.bgLfo = lfo;
+        this.bgLfoGain = lfoGain;
+        this.bgGain = masterGain;
+    }
+
+    updateBgSiren(progress) {
+        if (!this.bgOsc || !this.bgLfo || !this.bgLfoGain || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        this.bgOsc.frequency.setTargetAtTime(112 + progress * 65, now, 0.2);
+        this.bgLfo.frequency.setTargetAtTime(1.65 + progress * 2.1, now, 0.2);
+        this.bgLfoGain.gain.setTargetAtTime(20 + progress * 14, now, 0.2);
+    }
+
+    stopBgSiren() {
+        if (this.bgOsc) {
+            try {
+                this.bgOsc.stop();
+                this.bgOsc.disconnect();
+            } catch (_) { }
+            this.bgOsc = null;
+        }
+        if (this.bgLfo) {
+            try {
+                this.bgLfo.stop();
+                this.bgLfo.disconnect();
+            } catch (_) { }
+            this.bgLfo = null;
+        }
+        this.bgLfoGain = null;
+        this.bgGain = null;
     }
 
     sweep(startFreq, endFreq, duration, type = "triangle", vol = 0.09, delay = 0) {
@@ -259,7 +345,6 @@ class SoundEngine {
         osc.stop(now + duration);
     }
 
-    // Melodía de inicio solo para el menú (se puede detener en seco al darle JUGAR)
     intro() {
         this.init();
         if (this.muted || !this.ctx || this.introPlaying) return;
@@ -329,16 +414,49 @@ class SoundEngine {
         this.introOscs = [];
     }
 
+    // "Waka-Waka" con filtro vocal paso-banda
     chomp() {
         if (this.muted || !this.ctx) return;
-        // this.duckPowerSiren(185);
+        // this.duckSirens(185);
         this.chompToggle = !this.chompToggle;
 
-        const note = this.chompToggle ? 392.0 : 523.25;
-        this.sweep(note, note * 0.98, 0.05, "square", 0.065);
+        const now = this.ctx.currentTime;
+        const dur = 0.085;
+
+        const osc = this.ctx.createOscillator();
+        const filter = this.ctx.createBiquadFilter();
+        const gain = this.ctx.createGain();
+
+        osc.type = "sawtooth";
+        filter.type = "bandpass";
+        filter.Q.value = 3.5;
+
+        if (this.chompToggle) {
+            osc.frequency.setValueAtTime(190, now);
+            osc.frequency.exponentialRampToValueAtTime(340, now + dur);
+            filter.frequency.setValueAtTime(350, now);
+            filter.frequency.exponentialRampToValueAtTime(950, now + dur);
+        } else {
+            osc.frequency.setValueAtTime(340, now);
+            osc.frequency.exponentialRampToValueAtTime(160, now + dur);
+            filter.frequency.setValueAtTime(950, now);
+            filter.frequency.exponentialRampToValueAtTime(300, now + dur);
+        }
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.22, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + dur);
     }
 
     startPowerLoop() {
+        this.stopBgSiren();
         this.stopPowerLoop();
         if (this.muted) return;
 
@@ -371,7 +489,6 @@ class SoundEngine {
     }
 
     stopPowerLoop() {
-        clearTimeout(this.duckTimer);
         if (this.powerSource) {
             try {
                 this.powerSource.stop();
@@ -388,8 +505,15 @@ class SoundEngine {
         }
     }
 
+    stopAllLoops() {
+        clearTimeout(this.duckTimer);
+        this.isDucked = false;
+        this.stopBgSiren();
+        this.stopPowerLoop();
+    }
+
     eatGhost() {
-        this.duckPowerSiren(350);
+        this.duckSirens(350);
         if (this.playSample("eatghost")) return;
         this.sweep(220, 980, 0.28, "sawtooth", 0.1);
     }
@@ -401,7 +525,7 @@ class SoundEngine {
     }
 
     die() {
-        this.stopPowerLoop();
+        this.stopAllLoops();
         if (this.playSample("death")) return;
         const drops = [560, 510, 460, 410, 360, 310, 260, 210];
         drops.forEach((f, i) => {
@@ -412,7 +536,7 @@ class SoundEngine {
     }
 
     win() {
-        this.stopPowerLoop();
+        this.stopAllLoops();
         [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
             this.sweep(f, f, 0.15, "triangle", 0.1, i * 0.13);
         });
@@ -427,6 +551,7 @@ let score = 0;
 let highScore = Number(localStorage.getItem("pacman_offline_highscore") || 0);
 let level = 1;
 let lives = 3;
+let totalDotsInLevel = 1;
 let dotsRemaining = 0;
 let dotsEatenInLevel = 0;
 let state = "MENU"; // MENU, PLAYING, PAUSED, LEVEL_CLEAR, GAME_OVER
@@ -437,11 +562,38 @@ let floatingTexts = [];
 let lastTime = 0;
 let animTick = 0;
 
+let controlMode = localStorage.getItem("pacman_offline_control") || "SWIPE";
+
 let pacman = {};
 let ghosts = [];
 
 highScoreEl.textContent = highScore;
-overlaySubEl.textContent = "Toca aquí para escuchar la intro • Usa flechas, WASD o joystick";
+overlaySubEl.textContent = "Toca aquí para escuchar la intro • Desliza o usa flechas";
+
+function getLevelProgress() {
+    return Math.min(1, Math.max(0, 1 - dotsRemaining / Math.max(1, totalDotsInLevel)));
+}
+
+function applyControlMode(mode) {
+    controlMode = mode;
+    localStorage.setItem("pacman_offline_control", mode);
+
+    if (mode === "JOYSTICK") {
+        joystickZone.classList.remove("hidden");
+        controlLabelEl.textContent = "Joystick";
+        controlModeBtn.classList.add("is-alt");
+    } else {
+        joystickZone.classList.add("hidden");
+        controlLabelEl.textContent = "Dedo";
+        controlModeBtn.classList.remove("is-alt");
+    }
+}
+
+applyControlMode(controlMode);
+
+controlModeBtn.addEventListener("click", () => {
+    applyControlMode(controlMode === "SWIPE" ? "JOYSTICK" : "SWIPE");
+});
 
 function cloneMap(map) {
     return map.map((row) => [...row]);
@@ -509,7 +661,10 @@ function resetPositions() {
 
     frightenedTimer = 0;
     ghostCombo = 0;
-    sound.stopPowerLoop();
+    sound.stopAllLoops();
+    if (state === "PLAYING") {
+        sound.startBgSiren(getLevelProgress());
+    }
 }
 
 function loadLevel() {
@@ -527,6 +682,7 @@ function loadLevel() {
             }
         }
     }
+    totalDotsInLevel = dotsRemaining;
 
     resetPositions();
     updateHUD();
@@ -534,13 +690,15 @@ function loadLevel() {
 
 function startNewGame() {
     sound.init();
-    sound.stopIntro(); // Corta la canción del menú al instante al empezar a jugar
+    sound.stopIntro();
     score = 0;
     level = 1;
     lives = 3;
-    loadLevel();
     state = "PLAYING";
+    loadLevel();
     overlayEl.classList.add("hidden");
+    sound.startBgSiren(0);
+    pauseBtn.classList.remove("is-paused"); pauseLabelEl.textContent = "Pausar";
 }
 
 function updateHUD() {
@@ -623,6 +781,9 @@ function updatePacman(dt) {
         dotsRemaining--;
         dotsEatenInLevel++;
 
+        const progress = getLevelProgress();
+        sound.updateBgSiren(progress);
+
         if (tileVal === 0) {
             addScore(10);
             sound.chomp();
@@ -644,8 +805,8 @@ function updatePacman(dt) {
             sound.win();
             setTimeout(() => {
                 level++;
-                loadLevel();
                 state = "PLAYING";
+                loadLevel();
             }, 1400);
         }
     }
@@ -718,6 +879,7 @@ function updateGhosts(dt) {
         frightenedTimer = Math.max(0, frightenedTimer - dt);
         if (frightenedTimer === 0) {
             sound.stopPowerLoop();
+            sound.startBgSiren(getLevelProgress());
         }
     }
 
@@ -967,7 +1129,48 @@ window.addEventListener("keydown", (e) => {
     else if (key === "m") toggleMute();
 });
 
-// Controles táctiles (Joystick virtual)
+// 1) Control táctil por deslizamiento continuo (Solo dedo)
+let swipePointerId = null;
+let swipeAnchorX = 0;
+let swipeAnchorY = 0;
+const SWIPE_THRESHOLD = 18;
+
+document.addEventListener("pointerdown", (e) => {
+    if (controlMode !== "SWIPE" || state !== "PLAYING") return;
+    if (e.target.closest("button")) return;
+
+    swipePointerId = e.pointerId;
+    swipeAnchorX = e.clientX;
+    swipeAnchorY = e.clientY;
+});
+
+document.addEventListener("pointermove", (e) => {
+    if (controlMode !== "SWIPE" || e.pointerId !== swipePointerId) return;
+
+    const dx = e.clientX - swipeAnchorX;
+    const dy = e.clientY - swipeAnchorY;
+    const dist = Math.hypot(dx, dy);
+
+    if (dist >= SWIPE_THRESHOLD) {
+        if (Math.abs(dx) > Math.abs(dy)) {
+            pacman.nextDir = dx > 0 ? DIRS.RIGHT : DIRS.LEFT;
+        } else {
+            pacman.nextDir = dy > 0 ? DIRS.DOWN : DIRS.UP;
+        }
+        swipeAnchorX = e.clientX;
+        swipeAnchorY = e.clientY;
+    }
+});
+
+document.addEventListener("pointerup", (e) => {
+    if (e.pointerId === swipePointerId) swipePointerId = null;
+});
+
+document.addEventListener("pointercancel", (e) => {
+    if (e.pointerId === swipePointerId) swipePointerId = null;
+});
+
+// 2) Control táctil por Joystick virtual
 const joystickBase = document.getElementById("joystick-base");
 const joystickKnob = document.getElementById("joystick-knob");
 
@@ -1033,26 +1236,39 @@ if (joystickBase && joystickKnob) {
 function togglePause() {
     if (state === "PLAYING") {
         state = "PAUSED";
-        sound.stopPowerLoop();
+        sound.stopAllLoops();
+        pauseBtn.classList.add("is-paused");
+        pauseLabelEl.textContent = "Pausado";
         overlayTitleEl.textContent = "PAUSA";
         overlaySubEl.textContent = "Presiona P o Continuar para seguir";
         startBtn.textContent = "CONTINUAR";
         overlayEl.classList.remove("hidden");
     } else if (state === "PAUSED") {
         state = "PLAYING";
-        if (frightenedTimer > 0) sound.startPowerLoop();
+        pauseBtn.classList.remove("is-paused");
+        pauseLabelEl.textContent = "Pausar";
+        if (frightenedTimer > 0) {
+            sound.startPowerLoop();
+        } else {
+            sound.startBgSiren(getLevelProgress());
+        }
         overlayEl.classList.add("hidden");
     }
 }
 
 function toggleMute() {
     sound.muted = !sound.muted;
-    muteBtn.textContent = `Sonido: ${sound.muted ? "OFF" : "ON"} (M)`;
+    muteBtn.classList.toggle("is-muted", sound.muted);
+    muteLabelEl.textContent = sound.muted ? "Silencio" : "Sonido ON";
     if (sound.muted) {
         sound.stopIntro();
-        sound.stopPowerLoop();
-    } else if (state === "PLAYING" && frightenedTimer > 0) {
-        sound.startPowerLoop();
+        sound.stopAllLoops();
+    } else if (state === "PLAYING") {
+        if (frightenedTimer > 0) {
+            sound.startPowerLoop();
+        } else {
+            sound.startBgSiren(getLevelProgress());
+        }
     }
 }
 
