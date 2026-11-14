@@ -230,7 +230,6 @@ class SoundEngine {
         }
     }
 
-    // Prioridad de canal: silencia brevemente la sirena activa mientras Pac-Man come puntos
     duckSirens(ms = 185) {
         clearTimeout(this.duckTimer);
         this.isDucked = true;
@@ -263,7 +262,6 @@ class SoundEngine {
         }, ms);
     }
 
-    // Sirena de fondo clásica de pasillos vacíos
     startBgSiren(progress = 0) {
         if (this.muted || !this.ctx || this.bgOsc) return;
 
@@ -417,7 +415,6 @@ class SoundEngine {
     // "Waka-Waka" con filtro vocal paso-banda
     chomp() {
         if (this.muted || !this.ctx) return;
-        // this.duckSirens(185);
         this.chompToggle = !this.chompToggle;
 
         const now = this.ctx.currentTime;
@@ -698,7 +695,8 @@ function startNewGame() {
     loadLevel();
     overlayEl.classList.add("hidden");
     sound.startBgSiren(0);
-    pauseBtn.classList.remove("is-paused"); pauseLabelEl.textContent = "Pausar";
+    pauseBtn.classList.remove("is-paused");
+    pauseLabelEl.textContent = "Pausar";
 }
 
 function updateHUD() {
@@ -742,7 +740,7 @@ function updatePacman(dt) {
     const distToCenter = Math.hypot(pacman.x - center.x, pacman.y - center.y);
     if (
         (pacman.nextDir.x !== pacman.dir.x || pacman.nextDir.y !== pacman.dir.y) &&
-        distToCenter <= step + 2 &&
+        distToCenter <= TILE * 0.38 &&
         canMove(col, row, pacman.nextDir, false)
     ) {
         pacman.x = center.x;
@@ -1129,45 +1127,63 @@ window.addEventListener("keydown", (e) => {
     else if (key === "m") toggleMute();
 });
 
-// 1) Control táctil por deslizamiento continuo (Solo dedo)
-let swipePointerId = null;
+// 1) Control táctil rápido por deslizamiento (Solo dedo - respuesta inmediata)
+let swipeTouchId = null;
 let swipeAnchorX = 0;
 let swipeAnchorY = 0;
-const SWIPE_THRESHOLD = 18;
+let swipeHasTurned = false;
 
-document.addEventListener("pointerdown", (e) => {
+document.addEventListener("touchstart", (e) => {
     if (controlMode !== "SWIPE" || state !== "PLAYING") return;
     if (e.target.closest("button")) return;
 
-    swipePointerId = e.pointerId;
-    swipeAnchorX = e.clientX;
-    swipeAnchorY = e.clientY;
-});
+    e.preventDefault();
+    const touch = e.changedTouches[0];
+    swipeTouchId = touch.identifier;
+    swipeAnchorX = touch.clientX;
+    swipeAnchorY = touch.clientY;
+    swipeHasTurned = false;
+}, { passive: false });
 
-document.addEventListener("pointermove", (e) => {
-    if (controlMode !== "SWIPE" || e.pointerId !== swipePointerId) return;
+document.addEventListener("touchmove", (e) => {
+    if (controlMode !== "SWIPE" || state !== "PLAYING" || swipeTouchId === null) return;
+    if (e.target.closest("button")) return;
 
-    const dx = e.clientX - swipeAnchorX;
-    const dy = e.clientY - swipeAnchorY;
-    const dist = Math.hypot(dx, dy);
+    e.preventDefault();
+    for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        if (touch.identifier !== swipeTouchId) continue;
 
-    if (dist >= SWIPE_THRESHOLD) {
-        if (Math.abs(dx) > Math.abs(dy)) {
-            pacman.nextDir = dx > 0 ? DIRS.RIGHT : DIRS.LEFT;
-        } else {
-            pacman.nextDir = dy > 0 ? DIRS.DOWN : DIRS.UP;
+        const dx = touch.clientX - swipeAnchorX;
+        const dy = touch.clientY - swipeAnchorY;
+        const dist = Math.hypot(dx, dy);
+        const threshold = swipeHasTurned ? 22 : 10;
+
+        if (dist >= threshold) {
+            if (Math.abs(dx) > Math.abs(dy)) {
+                pacman.nextDir = dx > 0 ? DIRS.RIGHT : DIRS.LEFT;
+            } else {
+                pacman.nextDir = dy > 0 ? DIRS.DOWN : DIRS.UP;
+            }
+            swipeAnchorX = touch.clientX;
+            swipeAnchorY = touch.clientY;
+            swipeHasTurned = true;
         }
-        swipeAnchorX = e.clientX;
-        swipeAnchorY = e.clientY;
+    }
+}, { passive: false });
+
+document.addEventListener("touchend", (e) => {
+    for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === swipeTouchId) {
+            swipeTouchId = null;
+            swipeHasTurned = false;
+        }
     }
 });
 
-document.addEventListener("pointerup", (e) => {
-    if (e.pointerId === swipePointerId) swipePointerId = null;
-});
-
-document.addEventListener("pointercancel", (e) => {
-    if (e.pointerId === swipePointerId) swipePointerId = null;
+document.addEventListener("touchcancel", () => {
+    swipeTouchId = null;
+    swipeHasTurned = false;
 });
 
 // 2) Control táctil por Joystick virtual

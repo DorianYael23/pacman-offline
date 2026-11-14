@@ -22,6 +22,7 @@
 html,
 body {
   overscroll-behavior: none;
+  touch-action: none;
 }
 
 body {
@@ -33,7 +34,6 @@ body {
   align-items: center;
   justify-content: center;
   padding: 12px;
-  touch-action: none;
 }
 
 .arcade-wrapper {
