@@ -1,10 +1,15 @@
-const CACHE_NAME = "pacman-offline-v10";
-const ASSETS = [
+const CACHE_NAME = "pacman-offline-v11";
+const CORE_ASSETS = [
     "./",
     "./index.html",
     "./style.css",
     "./game.js",
     "./manifest.json",
+    "./icon-192.png",
+    "./icon-512.png"
+];
+
+const SOUND_ASSETS = [
     "./sounds/death.mp3",
     "./sounds/eatghost.mp3",
     "./sounds/fruit.mp3",
@@ -13,7 +18,10 @@ const ASSETS = [
 
 self.addEventListener("install", (event) => {
     event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+        caches.open(CACHE_NAME).then(async (cache) => {
+            await cache.addAll(CORE_ASSETS);
+            await Promise.allSettled(SOUND_ASSETS.map((url) => cache.add(url)));
+        })
     );
     self.skipWaiting();
 });
