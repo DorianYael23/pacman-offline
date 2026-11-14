@@ -207,19 +207,6 @@ canvas {
   color: var(--text);
 }
 
-.kbd-hint {
-  display: none;
-  color: var(--muted);
-  font-weight: 600;
-  font-size: 0.7rem;
-}
-
-@media (min-width: 768px) {
-  .kbd-hint {
-    display: inline;
-  }
-}
-
 /* Estados visuales de los botones */
 #pause-btn .status-dot {
   background: var(--neon-blue);
@@ -266,12 +253,18 @@ canvas {
   box-shadow: 0 0 6px var(--accent);
 }
 
-/* Joystick táctil */
+/* Zona táctil ampliada para el Joystick */
 .joystick-zone {
+  width: 100%;
+  min-height: 154px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 4px;
+  margin-top: 2px;
+  touch-action: none;
+  border-radius: 14px;
+  background: rgba(17, 24, 39, 0.35);
+  border: 1px dashed rgba(59, 130, 246, 0.18);
 }
 
 .joystick-zone.hidden {
@@ -280,8 +273,8 @@ canvas {
 
 .joystick-base {
   position: relative;
-  width: 132px;
-  height: 132px;
+  width: 128px;
+  height: 128px;
   border-radius: 50%;
   background: radial-gradient(circle, #1e293b 0%, var(--panel) 72%);
   border: 2px solid var(--border);
@@ -291,6 +284,7 @@ canvas {
   justify-content: center;
   touch-action: none;
   cursor: grab;
+  transition: transform 0.12s ease-out;
 }
 
 .joystick-base::before {
@@ -303,13 +297,18 @@ canvas {
 }
 
 .joystick-knob {
-  width: 54px;
-  height: 54px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   background: radial-gradient(circle at 35% 35%, #fef08a, var(--accent) 65%, #ca8a04 100%);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6), 0 0 12px rgba(250, 204, 21, 0.35);
   pointer-events: none;
   transition: transform 0.08s ease-out;
+}
+
+.joystick-base.active {
+  transition: none;
+  border-color: rgba(250, 204, 21, 0.45);
 }
 
 .joystick-base.active .joystick-knob {

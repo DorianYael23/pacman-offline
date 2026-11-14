@@ -147,7 +147,6 @@ class SoundEngine {
         this.introGain = null;
         this.introPlaying = false;
 
-        // Sirena de fondo normal (acelera conforme quedan menos puntos)
         this.bgOsc = null;
         this.bgLfo = null;
         this.bgLfoGain = null;
@@ -155,7 +154,6 @@ class SoundEngine {
         this.bgBaseVol = 0.042;
         this.isDucked = false;
 
-        // Sirena cuando los fantasmas son vulnerables
         this.powerBuffer = null;
         this.powerSource = null;
         this.powerGain = null;
@@ -412,7 +410,6 @@ class SoundEngine {
         this.introOscs = [];
     }
 
-    // "Waka-Waka" con filtro vocal paso-banda
     chomp() {
         if (this.muted || !this.ctx) return;
         this.chompToggle = !this.chompToggle;
@@ -567,6 +564,21 @@ let ghosts = [];
 highScoreEl.textContent = highScore;
 overlaySubEl.textContent = "Toca aquí para escuchar la intro • Desliza o usa flechas";
 
+function vibrateTurn() {
+    if (navigator.vibrate) {
+        try {
+            navigator.vibrate(10);
+        } catch (_) { }
+    }
+}
+
+function setNextDirection(dir) {
+    if (!pacman.nextDir || pacman.nextDir.x !== dir.x || pacman.nextDir.y !== dir.y) {
+        pacman.nextDir = dir;
+        vibrateTurn();
+    }
+}
+
 function getLevelProgress() {
     return Math.min(1, Math.max(0, 1 - dotsRemaining / Math.max(1, totalDotsInLevel)));
 }
@@ -638,6 +650,7 @@ function resetPositions() {
         y: pStart.y,
         dir: DIRS.NONE,
         nextDir: DIRS.NONE,
+        facingDir: DIRS.RIGHT,
         speed: 112 + Math.min(level - 1, 5) * 4,
         mouth: 0
     };
@@ -723,32 +736,30 @@ function updatePacman(dt) {
     const { col, row } = posToTile(pacman.x, pacman.y);
     const center = tileCenter(col, row);
 
+    // 1. Giro inmediato de 180 grados en el mismo eje
     if (
-        pacman.nextDir.x !== 0 &&
-        pacman.nextDir.x === -pacman.dir.x &&
-        pacman.nextDir.y === 0
+        (pacman.nextDir.x !== 0 && pacman.nextDir.x === -pacman.dir.x && pacman.nextDir.y === 0) ||
+        (pacman.nextDir.y !== 0 && pacman.nextDir.y === -pacman.dir.y && pacman.nextDir.x === 0)
     ) {
         pacman.dir = pacman.nextDir;
-    } else if (
-        pacman.nextDir.y !== 0 &&
-        pacman.nextDir.y === -pacman.dir.y &&
-        pacman.nextDir.x === 0
-    ) {
-        pacman.dir = pacman.nextDir;
+        pacman.facingDir = pacman.dir;
     }
 
+    // 2. Giro perpendicular en intersecciones (con margen amplio para enganchar cualquier cruce)
     const distToCenter = Math.hypot(pacman.x - center.x, pacman.y - center.y);
     if (
         (pacman.nextDir.x !== pacman.dir.x || pacman.nextDir.y !== pacman.dir.y) &&
-        distToCenter <= TILE * 0.38 &&
+        distToCenter <= TILE * 0.55 &&
         canMove(col, row, pacman.nextDir, false)
     ) {
         pacman.x = center.x;
         pacman.y = center.y;
         pacman.dir = pacman.nextDir;
+        pacman.facingDir = pacman.dir;
     }
 
     if (pacman.dir.x !== 0 || pacman.dir.y !== 0) {
+        pacman.facingDir = pacman.dir;
         if (pacman.dir.x !== 0) pacman.y = center.y;
         if (pacman.dir.y !== 0) pacman.x = center.x;
 
@@ -761,7 +772,19 @@ function updatePacman(dt) {
         if (!movingTowardsCenter && !canMove(col, row, pacman.dir, false)) {
             pacman.x = center.x;
             pacman.y = center.y;
-            pacman.dir = DIRS.NONE;
+
+            // Si es una esquina en L con un solo camino libre, dobla automáticamente sin frenar
+            const perps =
+                pacman.dir.x !== 0 ? [DIRS.UP, DIRS.DOWN] : [DIRS.LEFT, DIRS.RIGHT];
+            const openPerps = perps.filter((d) => canMove(col, row, d, false));
+
+            if (openPerps.length === 1) {
+                pacman.dir = openPerps[0];
+                pacman.nextDir = openPerps[0];
+                pacman.facingDir = openPerps[0];
+            } else {
+                pacman.dir = DIRS.NONE;
+            }
         } else {
             pacman.x += pacman.dir.x * step;
             pacman.y += pacman.dir.y * step;
@@ -994,10 +1017,11 @@ function drawBonusFruit() {
 
 function drawPacman() {
     const angleOffset = Math.abs(Math.sin(pacman.mouth)) * 0.28 * Math.PI;
+    const face = pacman.facingDir || DIRS.RIGHT;
     let rotation = 0;
-    if (pacman.dir === DIRS.DOWN) rotation = Math.PI / 2;
-    else if (pacman.dir === DIRS.LEFT) rotation = Math.PI;
-    else if (pacman.dir === DIRS.UP) rotation = -Math.PI / 2;
+    if (face === DIRS.DOWN) rotation = Math.PI / 2;
+    else if (face === DIRS.LEFT) rotation = Math.PI;
+    else if (face === DIRS.UP) rotation = -Math.PI / 2;
 
     ctx.save();
     ctx.translate(pacman.x, pacman.y);
@@ -1127,11 +1151,48 @@ window.addEventListener("keydown", (e) => {
     else if (key === "m") toggleMute();
 });
 
-// 1) Control táctil rápido por deslizamiento (Solo dedo - respuesta inmediata)
+// 1) Control táctil rápido y limpio (Solo dedo - soporta flicks cortos y curvas continuas)
 let swipeTouchId = null;
-let swipeAnchorX = 0;
-let swipeAnchorY = 0;
-let swipeHasTurned = false;
+let swipeStartX = 0;
+let swipeStartY = 0;
+let swipeStartTime = 0;
+let lastCommittedDir = DIRS.NONE;
+
+function evaluateSwipe(clientX, clientY, isTouchEnd = false) {
+    const dx = clientX - swipeStartX;
+    const dy = clientY - swipeStartY;
+    const absX = Math.abs(dx);
+    const absY = Math.abs(dy);
+    const dist = Math.hypot(dx, dy);
+
+    if (lastCommittedDir === DIRS.NONE) {
+        const elapsed = Math.max(1, performance.now() - swipeStartTime);
+        const velocity = dist / elapsed;
+        const minDist = isTouchEnd ? 8 : (velocity > 0.45 ? 7 : 12);
+
+        if (dist >= minDist && Math.max(absX, absY) >= Math.min(absX, absY) * 1.2) {
+            const newDir = absX > absY
+                ? (dx > 0 ? DIRS.RIGHT : DIRS.LEFT)
+                : (dy > 0 ? DIRS.DOWN : DIRS.UP);
+            setNextDirection(newDir);
+            lastCommittedDir = newDir;
+            swipeStartX = clientX;
+            swipeStartY = clientY;
+        }
+    } else if (!isTouchEnd) {
+        if (dist >= 28 && Math.max(absX, absY) >= Math.min(absX, absY) * 1.5) {
+            const newDir = absX > absY
+                ? (dx > 0 ? DIRS.RIGHT : DIRS.LEFT)
+                : (dy > 0 ? DIRS.DOWN : DIRS.UP);
+            if (newDir !== lastCommittedDir) {
+                setNextDirection(newDir);
+                lastCommittedDir = newDir;
+                swipeStartX = clientX;
+                swipeStartY = clientY;
+            }
+        }
+    }
+}
 
 document.addEventListener("touchstart", (e) => {
     if (controlMode !== "SWIPE" || state !== "PLAYING") return;
@@ -1140,9 +1201,10 @@ document.addEventListener("touchstart", (e) => {
     e.preventDefault();
     const touch = e.changedTouches[0];
     swipeTouchId = touch.identifier;
-    swipeAnchorX = touch.clientX;
-    swipeAnchorY = touch.clientY;
-    swipeHasTurned = false;
+    swipeStartX = touch.clientX;
+    swipeStartY = touch.clientY;
+    swipeStartTime = performance.now();
+    lastCommittedDir = DIRS.NONE;
 }, { passive: false });
 
 document.addEventListener("touchmove", (e) => {
@@ -1152,56 +1214,44 @@ document.addEventListener("touchmove", (e) => {
     e.preventDefault();
     for (let i = 0; i < e.changedTouches.length; i++) {
         const touch = e.changedTouches[i];
-        if (touch.identifier !== swipeTouchId) continue;
-
-        const dx = touch.clientX - swipeAnchorX;
-        const dy = touch.clientY - swipeAnchorY;
-        const dist = Math.hypot(dx, dy);
-        const threshold = swipeHasTurned ? 22 : 10;
-
-        if (dist >= threshold) {
-            if (Math.abs(dx) > Math.abs(dy)) {
-                pacman.nextDir = dx > 0 ? DIRS.RIGHT : DIRS.LEFT;
-            } else {
-                pacman.nextDir = dy > 0 ? DIRS.DOWN : DIRS.UP;
-            }
-            swipeAnchorX = touch.clientX;
-            swipeAnchorY = touch.clientY;
-            swipeHasTurned = true;
+        if (touch.identifier === swipeTouchId) {
+            evaluateSwipe(touch.clientX, touch.clientY, false);
         }
     }
 }, { passive: false });
 
 document.addEventListener("touchend", (e) => {
     for (let i = 0; i < e.changedTouches.length; i++) {
-        if (e.changedTouches[i].identifier === swipeTouchId) {
+        const touch = e.changedTouches[i];
+        if (touch.identifier === swipeTouchId) {
+            if (controlMode === "SWIPE" && state === "PLAYING") {
+                evaluateSwipe(touch.clientX, touch.clientY, true);
+            }
             swipeTouchId = null;
-            swipeHasTurned = false;
+            lastCommittedDir = DIRS.NONE;
         }
     }
 });
 
 document.addEventListener("touchcancel", () => {
     swipeTouchId = null;
-    swipeHasTurned = false;
+    lastCommittedDir = DIRS.NONE;
 });
 
-// 2) Control táctil por Joystick virtual
+// 2) Control táctil por Joystick virtual (toda la zona inferior captura y auto-centra la palanca)
 const joystickBase = document.getElementById("joystick-base");
 const joystickKnob = document.getElementById("joystick-knob");
 
-if (joystickBase && joystickKnob) {
+if (joystickZone && joystickBase && joystickKnob) {
     const maxRadius = 38;
-    const deadZone = 12;
+    const deadZone = 10;
     let activePointerId = null;
+    let originX = 0;
+    let originY = 0;
 
     const updateJoystick = (clientX, clientY) => {
-        const rect = joystickBase.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-
-        let dx = clientX - centerX;
-        let dy = clientY - centerY;
+        let dx = clientX - originX;
+        let dy = clientY - originY;
         const distance = Math.hypot(dx, dy);
 
         if (distance > maxRadius) {
@@ -1213,10 +1263,29 @@ if (joystickBase && joystickKnob) {
         joystickKnob.style.transform = `translate(${dx}px, ${dy}px)`;
 
         if (distance >= deadZone) {
-            if (Math.abs(dx) > Math.abs(dy)) {
-                pacman.nextDir = dx > 0 ? DIRS.RIGHT : DIRS.LEFT;
+            const absX = Math.abs(dx);
+            const absY = Math.abs(dy);
+            const isHorizontal = pacman.nextDir.x !== 0;
+            const isVertical = pacman.nextDir.y !== 0;
+
+            if (isHorizontal) {
+                if (absY > absX * 1.25) {
+                    setNextDirection(dy > 0 ? DIRS.DOWN : DIRS.UP);
+                } else {
+                    setNextDirection(dx > 0 ? DIRS.RIGHT : DIRS.LEFT);
+                }
+            } else if (isVertical) {
+                if (absX > absY * 1.25) {
+                    setNextDirection(dx > 0 ? DIRS.RIGHT : DIRS.LEFT);
+                } else {
+                    setNextDirection(dy > 0 ? DIRS.DOWN : DIRS.UP);
+                }
             } else {
-                pacman.nextDir = dy > 0 ? DIRS.DOWN : DIRS.UP;
+                if (absX > absY) {
+                    setNextDirection(dx > 0 ? DIRS.RIGHT : DIRS.LEFT);
+                } else {
+                    setNextDirection(dy > 0 ? DIRS.DOWN : DIRS.UP);
+                }
             }
         }
     };
@@ -1224,27 +1293,43 @@ if (joystickBase && joystickKnob) {
     const resetJoystick = () => {
         activePointerId = null;
         joystickBase.classList.remove("active");
+        joystickBase.style.transform = "translate(0px, 0px)";
         joystickKnob.style.transform = "translate(0px, 0px)";
     };
 
-    joystickBase.addEventListener("pointerdown", (e) => {
+    joystickZone.addEventListener("pointerdown", (e) => {
         e.preventDefault();
         activePointerId = e.pointerId;
-        joystickBase.setPointerCapture(e.pointerId);
+        joystickZone.setPointerCapture(e.pointerId);
+
+        const zoneRect = joystickZone.getBoundingClientRect();
+        const zoneCenterX = zoneRect.left + zoneRect.width / 2;
+        const zoneCenterY = zoneRect.top + zoneRect.height / 2;
+
+        const maxOffsetX = Math.max(0, zoneRect.width / 2 - 68);
+        const maxOffsetY = Math.max(0, zoneRect.height / 2 - 68);
+
+        const offsetX = Math.max(-maxOffsetX, Math.min(maxOffsetX, e.clientX - zoneCenterX));
+        const offsetY = Math.max(-maxOffsetY, Math.min(maxOffsetY, e.clientY - zoneCenterY));
+
+        originX = zoneCenterX + offsetX;
+        originY = zoneCenterY + offsetY;
+
         joystickBase.classList.add("active");
+        joystickBase.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
         updateJoystick(e.clientX, e.clientY);
     });
 
-    joystickBase.addEventListener("pointermove", (e) => {
+    joystickZone.addEventListener("pointermove", (e) => {
         if (e.pointerId !== activePointerId) return;
         updateJoystick(e.clientX, e.clientY);
     });
 
-    joystickBase.addEventListener("pointerup", (e) => {
+    joystickZone.addEventListener("pointerup", (e) => {
         if (e.pointerId === activePointerId) resetJoystick();
     });
 
-    joystickBase.addEventListener("pointercancel", (e) => {
+    joystickZone.addEventListener("pointercancel", (e) => {
         if (e.pointerId === activePointerId) resetJoystick();
     });
 }
