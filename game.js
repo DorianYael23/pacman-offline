@@ -720,7 +720,7 @@ function updateHUD() {
     }
     highScoreEl.textContent = highScore;
     levelEl.textContent = level;
-    livesEl.textContent = lives > 0 ? "🟡".repeat(lives) : "💀";
+    livesEl.textContent = lives > 0 ? "🟡".repeat(lives) : "👻";
 }
 
 function addScore(points, x, y) {
