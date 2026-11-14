@@ -1,0 +1,15 @@
+{
+  "name": "Pac-Man Arcade Offline",
+  "short_name": "Pac-Man",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#090d16",
+  "theme_color": "#090d16",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23090d16'/%3E%3Cpath d='M50 50 L88 28 A44 44 0 1 0 88 72 Z' fill='%23facc15'/%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}
