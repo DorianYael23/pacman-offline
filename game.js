@@ -8,7 +8,20 @@ const livesEl = document.getElementById("lives");
 const overlayEl = document.getElementById("overlay");
 const overlayTitleEl = document.getElementById("overlay-title");
 const overlaySubEl = document.getElementById("overlay-subtitle");
+const savedBannerEl = document.getElementById("saved-banner");
+const menuConfigEl = document.getElementById("menu-config");
+const modeArcadeBtn = document.getElementById("mode-arcade-btn");
+const modeChaosBtn = document.getElementById("mode-chaos-btn");
+const arcadeSubWrap = document.getElementById("arcade-sub-wrap");
+const arcadeNormalBtn = document.getElementById("arcade-normal-btn");
+const arcadePowersBtn = document.getElementById("arcade-powers-btn");
+const arcadeSubDescEl = document.getElementById("arcade-sub-desc");
+const chaosMapWrap = document.getElementById("chaos-map-wrap");
+const mapSelectEl = document.getElementById("map-select");
+const continueBtn = document.getElementById("continue-btn");
 const startBtn = document.getElementById("start-btn");
+const statusStripEl = document.getElementById("status-strip");
+const toolbarEl = document.getElementById("toolbar");
 const pauseBtn = document.getElementById("pause-btn");
 const muteBtn = document.getElementById("mute-btn");
 const controlModeBtn = document.getElementById("control-mode-btn");
@@ -74,10 +87,10 @@ const LEVELS = [
             [1, 1, 1, 1, 0, 1, 2, 1, 1, 1, 1, 1, 2, 1, 0, 1, 1, 1, 1],
             [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
             [1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1],
-            [1, 3, 0, 1, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 1, 0, 3, 1],
-            [1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1],
-            [1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 3, 1, 1, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 1, 1, 3, 1],
+            [1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1],
+            [1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
         ]
     },
@@ -120,7 +133,7 @@ const LEVELS = [
             [2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2],
             [1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1],
             [1, 3, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 3, 1],
-            [1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1],
+            [1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1],
             [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
         ]
@@ -198,9 +211,9 @@ const LEVELS = [
             [2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2],
             [1, 0, 1, 0, 1, 0, 1, 1, 1, 2, 1, 1, 1, 0, 1, 0, 1, 0, 1],
             [1, 0, 1, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 1, 0, 1],
-            [1, 0, 1, 1, 1, 0, 2, 1, 1, 4, 1, 1, 2, 0, 1, 1, 1, 0, 1],
+            [1, 0, 1, 1, 1, 1, 2, 1, 1, 4, 1, 1, 2, 1, 1, 1, 1, 0, 1],
             [2, 0, 0, 0, 0, 0, 2, 1, 2, 2, 2, 1, 2, 0, 0, 0, 0, 0, 2],
-            [1, 0, 1, 1, 1, 0, 2, 1, 1, 1, 1, 1, 2, 0, 1, 1, 1, 0, 1],
+            [1, 0, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 0, 1],
             [1, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 1],
             [1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1],
             [1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1],
@@ -242,7 +255,7 @@ const LEVELS = [
             [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1],
             [1, 1, 1, 0, 1, 0, 1, 1, 1, 2, 1, 1, 1, 0, 1, 0, 1, 1, 1],
             [2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2],
-            [1, 0, 1, 1, 1, 0, 2, 1, 1, 4, 1, 1, 2, 0, 1, 1, 1, 0, 1],
+            [1, 0, 1, 1, 1, 1, 2, 1, 1, 4, 1, 1, 2, 1, 1, 1, 1, 0, 1],
             [1, 0, 1, 0, 0, 0, 2, 1, 2, 2, 2, 1, 2, 0, 0, 0, 1, 0, 1],
             [1, 0, 1, 0, 1, 1, 2, 1, 1, 1, 1, 1, 2, 1, 1, 0, 1, 0, 1],
             [1, 0, 0, 0, 1, 0, 2, 2, 2, 2, 2, 2, 2, 0, 1, 0, 0, 0, 1],
@@ -286,9 +299,9 @@ const LEVELS = [
             [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
             [1, 1, 0, 1, 1, 0, 1, 1, 1, 2, 1, 1, 1, 0, 1, 1, 0, 1, 1],
             [2, 0, 0, 0, 1, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1, 0, 0, 0, 2],
-            [1, 1, 1, 0, 1, 0, 2, 1, 1, 4, 1, 1, 2, 0, 1, 0, 1, 1, 1],
+            [1, 1, 1, 0, 1, 1, 2, 1, 1, 4, 1, 1, 2, 1, 1, 0, 1, 1, 1],
             [1, 0, 0, 0, 0, 0, 2, 1, 2, 2, 2, 1, 2, 0, 0, 0, 0, 0, 1],
-            [1, 0, 1, 1, 1, 0, 2, 1, 1, 1, 1, 1, 2, 0, 1, 1, 1, 0, 1],
+            [1, 0, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 0, 1],
             [1, 0, 0, 0, 1, 0, 2, 2, 2, 2, 2, 2, 2, 0, 1, 0, 0, 0, 1],
             [1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1],
             [2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2],
@@ -297,6 +310,182 @@ const LEVELS = [
             [1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1],
             [1, 3, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 3, 1],
             [1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        ]
+    },
+    {
+        name: "Nivel 7 - Circuito Neón",
+        theme: {
+            bg: "#091405",
+            gridLine: "rgba(132, 204, 22, 0.08)",
+            wallFill: "#1a2e05",
+            wallInner: "#4d7c0f",
+            wallStroke: "#a3e635",
+            glow: "rgba(132, 204, 22, 0.48)",
+            dotColor: "#fef08a",
+            accent: "#bef264"
+        },
+        pacmanSpawn: { col: 9, row: 15 },
+        ghostGate: { col: 9, row: 8 },
+        ghostSpawns: [
+            { col: 9, row: 7, color: "#ef4444", type: "chaser", name: "Blinky" },
+            { col: 8, row: 9, color: "#f472b6", type: "ambusher", name: "Pinky" },
+            { col: 9, row: 9, color: "#38bdf8", type: "flanker", name: "Inky" },
+            { col: 10, row: 9, color: "#fb923c", type: "clyde", name: "Clyde" }
+        ],
+        map: [
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 3, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 3, 1],
+            [1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1],
+            [1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1],
+            [2, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 2],
+            [1, 0, 1, 1, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 1, 1, 0, 1],
+            [1, 0, 0, 1, 0, 1, 2, 1, 1, 4, 1, 1, 2, 1, 0, 1, 0, 0, 1],
+            [1, 1, 0, 1, 0, 1, 2, 1, 2, 2, 2, 1, 2, 1, 0, 1, 0, 1, 1],
+            [1, 0, 0, 0, 0, 1, 2, 1, 1, 1, 1, 1, 2, 1, 0, 0, 0, 0, 1],
+            [1, 0, 1, 1, 0, 0, 2, 2, 2, 2, 2, 2, 2, 0, 0, 1, 1, 0, 1],
+            [1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1],
+            [1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1],
+            [2, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 2],
+            [1, 0, 1, 1, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 1, 1, 0, 1],
+            [1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1],
+            [1, 3, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 3, 1],
+            [1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        ]
+    },
+    {
+        name: "Nivel 8 - Arena Diamante",
+        theme: {
+            bg: "#070c18",
+            gridLine: "rgba(148, 163, 184, 0.09)",
+            wallFill: "#1e293b",
+            wallInner: "#475569",
+            wallStroke: "#cbd5e1",
+            glow: "rgba(148, 163, 184, 0.45)",
+            dotColor: "#bae6fd",
+            accent: "#38bdf8"
+        },
+        pacmanSpawn: { col: 9, row: 15 },
+        ghostGate: { col: 9, row: 8 },
+        ghostSpawns: [
+            { col: 9, row: 7, color: "#ef4444", type: "chaser", name: "Blinky" },
+            { col: 8, row: 9, color: "#f472b6", type: "ambusher", name: "Pinky" },
+            { col: 9, row: 9, color: "#38bdf8", type: "flanker", name: "Inky" },
+            { col: 10, row: 9, color: "#fb923c", type: "clyde", name: "Clyde" }
+        ],
+        map: [
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 1],
+            [1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1],
+            [1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1],
+            [1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 1, 1, 0, 1, 1, 0, 1, 2, 1, 0, 1, 1, 0, 1, 1, 0, 1],
+            [1, 0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+            [1, 1, 1, 0, 1, 1, 2, 1, 1, 4, 1, 1, 2, 1, 1, 0, 1, 1, 1],
+            [2, 0, 0, 0, 0, 0, 2, 1, 2, 2, 2, 1, 2, 0, 0, 0, 0, 0, 2],
+            [1, 1, 1, 0, 1, 1, 2, 1, 1, 1, 1, 1, 2, 1, 1, 0, 1, 1, 1],
+            [1, 0, 0, 0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0, 0, 0, 1],
+            [1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1],
+            [1, 0, 1, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 1, 0, 1],
+            [1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1],
+            [1, 3, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 3, 1],
+            [1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        ]
+    },
+    {
+        name: "Nivel 9 - Templo Magenta",
+        theme: {
+            bg: "#170516",
+            gridLine: "rgba(232, 121, 249, 0.08)",
+            wallFill: "#4a044e",
+            wallInner: "#a21caf",
+            wallStroke: "#f0abfc",
+            glow: "rgba(217, 70, 239, 0.48)",
+            dotColor: "#fef08a",
+            accent: "#e879f9"
+        },
+        pacmanSpawn: { col: 9, row: 15 },
+        ghostGate: { col: 9, row: 8 },
+        ghostSpawns: [
+            { col: 9, row: 7, color: "#ef4444", type: "chaser", name: "Blinky" },
+            { col: 8, row: 9, color: "#f472b6", type: "ambusher", name: "Pinky" },
+            { col: 9, row: 9, color: "#38bdf8", type: "flanker", name: "Inky" },
+            { col: 10, row: 9, color: "#fb923c", type: "clyde", name: "Clyde" }
+        ],
+        map: [
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 3, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 3, 1],
+            [1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1],
+            [1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1],
+            [2, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 2],
+            [1, 0, 0, 0, 0, 0, 1, 1, 1, 2, 1, 1, 1, 0, 0, 0, 0, 0, 1],
+            [1, 1, 1, 0, 1, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1, 0, 1, 1, 1],
+            [1, 0, 0, 0, 1, 1, 2, 1, 1, 4, 1, 1, 2, 1, 1, 0, 0, 0, 1],
+            [1, 0, 1, 0, 1, 1, 2, 1, 2, 2, 2, 1, 2, 1, 1, 0, 1, 0, 1],
+            [1, 0, 1, 0, 1, 1, 2, 1, 1, 1, 1, 1, 2, 1, 1, 0, 1, 0, 1],
+            [1, 0, 1, 0, 1, 0, 2, 2, 2, 2, 2, 2, 2, 0, 1, 0, 1, 0, 1],
+            [1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1],
+            [1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1],
+            [1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+            [2, 0, 1, 0, 1, 1, 1, 0, 0, 2, 0, 0, 1, 1, 1, 0, 1, 0, 2],
+            [1, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 1],
+            [1, 3, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 3, 1],
+            [1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        ]
+    },
+    {
+        name: "Nivel 10 - Núcleo Caos",
+        theme: {
+            bg: "#190404",
+            gridLine: "rgba(239, 68, 68, 0.09)",
+            wallFill: "#450a0a",
+            wallInner: "#b91c1c",
+            wallStroke: "#f87171",
+            glow: "rgba(239, 68, 68, 0.52)",
+            dotColor: "#fde047",
+            accent: "#fbbf24"
+        },
+        pacmanSpawn: { col: 9, row: 15 },
+        ghostGate: { col: 9, row: 8 },
+        ghostSpawns: [
+            { col: 9, row: 7, color: "#ef4444", type: "chaser", name: "Blinky" },
+            { col: 8, row: 9, color: "#f472b6", type: "ambusher", name: "Pinky" },
+            { col: 9, row: 9, color: "#38bdf8", type: "flanker", name: "Inky" },
+            { col: 10, row: 9, color: "#fb923c", type: "clyde", name: "Clyde" }
+        ],
+        map: [
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 1],
+            [1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [2, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 2],
+            [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
+            [1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 1, 1, 0, 1, 2, 1, 1, 4, 1, 1, 2, 1, 0, 1, 1, 0, 1],
+            [2, 0, 0, 0, 0, 1, 2, 1, 2, 2, 2, 1, 2, 1, 0, 0, 0, 0, 2],
+            [1, 0, 1, 1, 0, 1, 2, 1, 1, 1, 1, 1, 2, 1, 0, 1, 1, 0, 1],
+            [1, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 1],
+            [1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1],
+            [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+            [1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1],
+            [2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+            [1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1],
+            [1, 3, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 3, 1],
+            [1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1],
             [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
         ]
@@ -806,11 +995,41 @@ class SoundEngine {
             this.sweep(f, f, 0.15, "triangle", 0.1, i * 0.13);
         });
     }
+
+    rottenFruit() {
+        this.sweep(240, 82, 0.22, "sawtooth", 0.11, 0);
+        this.sweep(175, 58, 0.26, "square", 0.08, 0.09);
+    }
+
+    wallBreak() {
+        this.sweep(220, 62, 0.14, "sawtooth", 0.11, 0);
+    }
+
+    bomb() {
+        this.duckSirens(260);
+        this.sweep(180, 38, 0.34, "sawtooth", 0.14, 0);
+        this.sweep(340, 72, 0.22, "square", 0.09, 0.04);
+    }
+
+    chaosGhost() {
+        this.sweep(320, 960, 0.14, "sawtooth", 0.09, 0);
+        this.sweep(960, 480, 0.18, "sawtooth", 0.09, 0.12);
+    }
 }
 
 const sound = new SoundEngine();
 
 // Estado global del juego
+const SAVE_KEY = "pacman_offline_savestate";
+const EXTRA_LIFE_STEP = 10000;
+let gameMode = localStorage.getItem("pacman_offline_gamemode") || "ARCADE";
+if (gameMode !== "ARCADE" && gameMode !== "CHAOS") gameMode = "ARCADE";
+let arcadeSubMode = localStorage.getItem("pacman_offline_arcade_sub") || "POWERS";
+if (arcadeSubMode !== "NORMAL" && arcadeSubMode !== "POWERS") arcadeSubMode = "POWERS";
+let selectedMapMode = localStorage.getItem("pacman_offline_mapmode") || "RANDOM";
+let currentLevelIndex = 0;
+let lastPlayedMapIndex = -1;
+
 let grid = [];
 let score = 0;
 let highScore = Number(localStorage.getItem("pacman_offline_highscore") || 0);
@@ -818,7 +1037,7 @@ const START_LIVES = 5;
 const MAX_LIVES = 6;
 let level = 1;
 let lives = START_LIVES;
-let nextExtraLifeScore = 5000;
+let nextExtraLifeScore = EXTRA_LIFE_STEP;
 let totalDotsInLevel = 1;
 let dotsRemaining = 0;
 let dotsEatenInLevel = 0;
@@ -838,7 +1057,7 @@ let globalGhostMode = "SCATTER";
 let frightenedTimer = 0;
 let ghostCombo = 0;
 
-// Mecánicas nuevas: Turbo Dash, Combo Streak, Power-Ups, Juice
+// Mecánicas nuevas: Turbo Dash, Combo Streak, Power-Ups, Caos, Juice
 let dashEnergy = 0; // 0..100
 let dashTimer = 0;  // >0 cuando el turbo está activo
 const DASH_DURATION = 1.45;
@@ -853,14 +1072,19 @@ let magnetTimer = 0;
 let shieldActive = false;
 let invulnTimer = 0;
 
-let bonusFruit = null; // { x, y, timer, points }
+let bonusFruit = null; // { x, y, timer, points, isRotten }
 let nextFruitMilestoneIdx = 0;
 const FRUIT_MILESTONES = [35, 85];
 
-let activePowerItem = null; // { type, x, y, timer }
+let powerItems = []; // [{ type, x, y, timer }]
 let nextItemMilestoneIdx = 0;
 let lifeSpawnedInLevel = false;
 const ITEM_MILESTONES = [22, 65, 110];
+
+// Temporizadores exclusivos del Modo Caótico y auto-guardado
+let chaosEventTimer = 9;
+let chaosGhostCooldown = 14;
+let autoSaveTimer = 0;
 
 let floatingTexts = [];
 let particles = [];
@@ -936,7 +1160,101 @@ function cloneMap(map) {
 }
 
 function getLevelConfig() {
-    return LEVELS[(level - 1) % LEVELS.length];
+    return LEVELS[currentLevelIndex] || LEVELS[0];
+}
+
+function populateMapSelector() {
+    if (!mapSelectEl) return;
+    mapSelectEl.innerHTML = `<option value="RANDOM">🎲 Mapa Aleatorio</option>`;
+    LEVELS.forEach((lvl, idx) => {
+        const opt = document.createElement("option");
+        opt.value = String(idx);
+        opt.textContent = lvl.name;
+        mapSelectEl.appendChild(opt);
+    });
+    if (selectedMapMode !== "RANDOM") {
+        const parsed = Number(selectedMapMode);
+        if (!Number.isInteger(parsed) || parsed < 0 || parsed >= LEVELS.length) {
+            selectedMapMode = "RANDOM";
+        }
+    }
+    mapSelectEl.value = selectedMapMode;
+}
+
+function isPowersEnabled() {
+    return gameMode === "CHAOS" || arcadeSubMode === "POWERS";
+}
+
+function syncPowersVisibility() {
+    const enabled = isPowersEnabled();
+    if (statusStripEl) statusStripEl.classList.toggle("hidden", !enabled);
+    if (dashBtn) dashBtn.classList.toggle("hidden", !enabled);
+    if (toolbarEl) toolbarEl.classList.toggle("no-dash", !enabled);
+}
+
+function applyArcadeSubMode(sub) {
+    arcadeSubMode = sub === "NORMAL" ? "NORMAL" : "POWERS";
+    localStorage.setItem("pacman_offline_arcade_sub", arcadeSubMode);
+
+    if (arcadeNormalBtn) arcadeNormalBtn.classList.toggle("active", arcadeSubMode === "NORMAL");
+    if (arcadePowersBtn) arcadePowersBtn.classList.toggle("active", arcadeSubMode === "POWERS");
+    if (arcadeSubDescEl) {
+        arcadeSubDescEl.textContent =
+            arcadeSubMode === "NORMAL"
+                ? "Experiencia clásica pura: solo puntos, frutas dulces y 1-UP cada 10,000 pts"
+                : "Con Turbo, Combo, Hielo, Imán, Escudo, Corazones y frutas tóxicas";
+    }
+    syncPowersVisibility();
+}
+
+function applyGameMode(mode) {
+    gameMode = mode === "CHAOS" ? "CHAOS" : "ARCADE";
+    localStorage.setItem("pacman_offline_gamemode", gameMode);
+
+    if (modeArcadeBtn) modeArcadeBtn.classList.toggle("active", gameMode === "ARCADE");
+    if (modeChaosBtn) modeChaosBtn.classList.toggle("active", gameMode === "CHAOS");
+    if (arcadeSubWrap) arcadeSubWrap.classList.toggle("hidden", gameMode !== "ARCADE");
+    if (chaosMapWrap) chaosMapWrap.classList.toggle("hidden", gameMode !== "CHAOS");
+    syncPowersVisibility();
+}
+
+function pickChaosMapIndex(avoidIndex = -1) {
+    if (selectedMapMode !== "RANDOM") {
+        const idx = Number(selectedMapMode);
+        if (Number.isInteger(idx) && idx >= 0 && idx < LEVELS.length) return idx;
+    }
+    const candidates = [];
+    for (let i = 0; i < LEVELS.length; i++) {
+        if (i !== avoidIndex || LEVELS.length <= 1) candidates.push(i);
+    }
+    return candidates[Math.floor(Math.random() * candidates.length)];
+}
+
+populateMapSelector();
+applyArcadeSubMode(arcadeSubMode);
+applyGameMode(gameMode);
+
+if (modeArcadeBtn) {
+    modeArcadeBtn.addEventListener("click", () => applyGameMode("ARCADE"));
+}
+if (modeChaosBtn) {
+    modeChaosBtn.addEventListener("click", () => applyGameMode("CHAOS"));
+}
+if (arcadeNormalBtn) {
+    arcadeNormalBtn.addEventListener("click", () => applyArcadeSubMode("NORMAL"));
+}
+if (arcadePowersBtn) {
+    arcadePowersBtn.addEventListener("click", () => applyArcadeSubMode("POWERS"));
+}
+if (mapSelectEl) {
+    mapSelectEl.addEventListener("change", () => {
+        selectedMapMode = mapSelectEl.value;
+        localStorage.setItem("pacman_offline_mapmode", selectedMapMode);
+        if (state === "MENU" && gameMode === "CHAOS" && selectedMapMode !== "RANDOM") {
+            currentLevelIndex = Number(selectedMapMode);
+            loadLevel();
+        }
+    });
 }
 
 function tileCenter(col, row) {
@@ -1003,6 +1321,7 @@ function addFloatingText(text, x, y, color = "#facc15") {
 }
 
 function triggerDash() {
+    if (!isPowersEnabled()) return;
     if (state !== "PLAYING") return;
     if (dashTimer > 0 || dashEnergy < 100) return;
 
@@ -1049,6 +1368,10 @@ function updateStatusStrip() {
     }
     if (magnetTimer > 0) {
         pills += `<span class="power-pill magnet">🧲 ${Math.ceil(magnetTimer)}s</span>`;
+    }
+    const chaosGhost = ghosts.find((g) => g.isChaosGhost);
+    if (chaosGhost && chaosGhost.chaosTimer > 0) {
+        pills += `<span class="power-pill chaos">👾 ${Math.ceil(chaosGhost.chaosTimer)}s</span>`;
     }
     powerBadgesEl.innerHTML = pills;
 }
@@ -1149,9 +1472,11 @@ function loadLevel() {
     dotsEatenInLevel = 0;
     bonusFruit = null;
     nextFruitMilestoneIdx = 0;
-    activePowerItem = null;
+    powerItems = [];
     nextItemMilestoneIdx = 0;
     lifeSpawnedInLevel = false;
+    chaosEventTimer = 9;
+    chaosGhostCooldown = 14;
     floatingTexts = [];
     particles = [];
     shockwaves = [];
@@ -1184,17 +1509,31 @@ function beginReadyPhase() {
 function startNewGame() {
     sound.init();
     sound.stopIntro();
+    clearSavedGame();
     score = 0;
     level = 1;
     lives = START_LIVES;
-    nextExtraLifeScore = 5000;
-    dashEnergy = 35;
+    nextExtraLifeScore = EXTRA_LIFE_STEP;
+    dashEnergy = isPowersEnabled() ? 35 : 0;
     shieldActive = false;
+
+    if (gameMode === "CHAOS") {
+        currentLevelIndex = pickChaosMapIndex(lastPlayedMapIndex);
+    } else {
+        currentLevelIndex = 0;
+    }
+    lastPlayedMapIndex = currentLevelIndex;
+
+    syncPowersVisibility();
     loadLevel();
     overlayEl.classList.add("hidden");
+    if (menuConfigEl) menuConfigEl.classList.add("hidden");
+    if (savedBannerEl) savedBannerEl.classList.add("hidden");
+    if (continueBtn) continueBtn.classList.add("hidden");
     pauseBtn.classList.remove("is-paused");
     pauseLabelEl.textContent = "Pausar";
     beginReadyPhase();
+    saveGameState();
 }
 
 function updateHUD() {
@@ -1229,7 +1568,7 @@ function addScore(points, x, y, color = "#facc15") {
     score += points;
     while (score >= nextExtraLifeScore) {
         const milestone = nextExtraLifeScore;
-        nextExtraLifeScore += 5000;
+        nextExtraLifeScore += EXTRA_LIFE_STEP;
         const label = milestone.toLocaleString("es-ES");
 
         sound.extraLife();
@@ -1261,13 +1600,47 @@ function addScore(points, x, y, color = "#facc15") {
     }
 }
 
-function pickOpenSpawnPosition(avoidItem = null) {
+function isDestructibleWall(col, row) {
+    if (row <= 0 || row >= ROWS - 1 || col <= 0 || col >= COLS - 1) return false;
+    const cfg = getLevelConfig();
+    // Proteger siempre las paredes y la puerta de la casa de fantasmas
+    const inGhostHouseShell =
+        Math.abs(col - cfg.ghostGate.col) <= 3 &&
+        row >= cfg.ghostGate.row &&
+        row <= cfg.ghostGate.row + 2;
+    if (inGhostHouseShell) return false;
+    return grid[row]?.[col] === 1;
+}
+
+function destroyWallTile(col, row) {
+    if (!isDestructibleWall(col, row)) return false;
+    grid[row][col] = 2;
+    const cfg = getLevelConfig();
+    const pos = tileCenter(col, row);
+    const color = cfg.theme?.wallStroke || "#38bdf8";
+    spawnParticles(pos.x, pos.y, color, 8, 115);
+    spawnParticles(pos.x, pos.y, "#facc15", 4, 90);
+    return true;
+}
+
+function destroyWallsInRadius(centerCol, centerRow, radius = 2) {
+    let broken = 0;
+    for (let r = centerRow - radius; r <= centerRow + radius; r++) {
+        for (let c = centerCol - radius; c <= centerCol + radius; c++) {
+            if (Math.hypot(c - centerCol, r - centerRow) <= radius + 0.25) {
+                if (destroyWallTile(c, r)) broken++;
+            }
+        }
+    }
+    return broken;
+}
+
+function pickOpenSpawnPosition(avoidList = []) {
     const validTiles = [];
     const cfg = getLevelConfig();
     for (let r = 1; r < ROWS - 1; r++) {
         for (let c = 1; c < COLS - 1; c++) {
             if (grid[r][c] !== 0 && grid[r][c] !== 2) continue;
-            // Evitar la caja de fantasmas, encima de Pac-Man o encima de otro objeto
             const inHouse =
                 Math.abs(c - cfg.ghostGate.col) <= 2 &&
                 r >= cfg.ghostGate.row - 1 &&
@@ -1275,7 +1648,14 @@ function pickOpenSpawnPosition(avoidItem = null) {
             if (inHouse) continue;
             const pos = tileCenter(c, r);
             if (Math.hypot(pos.x - pacman.x, pos.y - pacman.y) < TILE * 3.5) continue;
-            if (avoidItem && Math.hypot(pos.x - avoidItem.x, pos.y - avoidItem.y) < TILE * 2.5) continue;
+            let tooClose = false;
+            for (const other of avoidList) {
+                if (other && Math.hypot(pos.x - other.x, pos.y - other.y) < TILE * 2.2) {
+                    tooClose = true;
+                    break;
+                }
+            }
+            if (tooClose) continue;
             validTiles.push(pos);
         }
     }
@@ -1284,41 +1664,84 @@ function pickOpenSpawnPosition(avoidItem = null) {
 }
 
 function spawnBonusFruit() {
-    const pos = pickOpenSpawnPosition(activePowerItem);
+    const pos = pickOpenSpawnPosition(powerItems);
     if (!pos) return;
+    const isRotten = isPowersEnabled() && Math.random() < 0.3;
     bonusFruit = {
         x: pos.x,
         y: pos.y,
         timer: 10,
-        points: 150 * level
+        points: 150 * level,
+        isRotten
     };
-    spawnShockwave(pos.x, pos.y, "#ef4444", 30);
+    spawnShockwave(pos.x, pos.y, isRotten ? "#84cc16" : "#ef4444", 30);
 }
 
-function spawnSpecialItem() {
-    const pos = pickOpenSpawnPosition(bonusFruit);
+function spawnSpecialItem(isChaosRain = false) {
+    if (!isPowersEnabled()) return;
+    const maxItems = gameMode === "CHAOS" ? 3 : 1;
+    if (powerItems.length >= maxItems) return;
+
+    const avoid = bonusFruit ? [bonusFruit, ...powerItems] : [...powerItems];
+    const pos = pickOpenSpawnPosition(avoid);
     if (!pos) return;
 
     let type;
-    // Si te faltan vidas, garantiza al menos un corazón de vida extra en el nivel
-    if (lives < START_LIVES && !lifeSpawnedInLevel) {
+    if (!isChaosRain && lives < START_LIVES && !lifeSpawnedInLevel) {
         type = "LIFE";
         lifeSpawnedInLevel = true;
     } else {
         const pool = ["FREEZE", "MAGNET"];
         if (!shieldActive) pool.push("SHIELD");
         if (lives < MAX_LIVES) pool.push("LIFE");
+        if (gameMode === "CHAOS") pool.push("BOMB");
         type = pool[Math.floor(Math.random() * pool.length)];
         if (type === "LIFE") lifeSpawnedInLevel = true;
     }
 
-    activePowerItem = {
+    powerItems.push({
         type,
         x: pos.x,
         y: pos.y,
         timer: type === "LIFE" ? 13 : 10.5
-    };
-    spawnShockwave(pos.x, pos.y, type === "LIFE" ? "#4ade80" : "#38bdf8", 38);
+    });
+    const waveColor =
+        type === "LIFE" ? "#4ade80" : type === "BOMB" ? "#f97316" : "#38bdf8";
+    spawnShockwave(pos.x, pos.y, waveColor, 38);
+}
+
+function spawnChaosGhost() {
+    if (ghosts.some((g) => g.isChaosGhost)) return;
+    const cfg = getLevelConfig();
+    const spawnPos = tileCenter(cfg.ghostGate.col, cfg.ghostGate.row - 1);
+    const baseGhostSpeed = 92 + Math.min(level - 1, 6) * 5.5;
+
+    ghosts.push({
+        x: spawnPos.x,
+        y: spawnPos.y,
+        dir: DIRS.LEFT,
+        color: "#a855f7",
+        type: "chaos",
+        name: "Caos",
+        speed: baseGhostSpeed * 1.24,
+        state: frightenedTimer > 0 ? "FRIGHTENED" : "NORMAL",
+        homeX: spawnPos.x,
+        homeY: spawnPos.y,
+        releaseDots: 0,
+        releaseTime: 0,
+        reversePending: false,
+        recoveredFromPower: false,
+        isChaosGhost: true,
+        chaosTimer: 14,
+        lastTileKey: "",
+        bobPhase: 0
+    });
+
+    sound.chaosGhost();
+    spawnShockwave(spawnPos.x, spawnPos.y, "#a855f7", 75);
+    spawnParticles(spawnPos.x, spawnPos.y, "#c084fc", 18, 120);
+    showMilestoneBanner("👾 ¡FANTASMA CAÓTICO!", "5.º fantasma veloz por 14s", "#c084fc");
+    updateStatusStrip();
 }
 
 function eatTileDot(row, col) {
@@ -1330,17 +1753,23 @@ function eatTileDot(row, col) {
     dotsEatenInLevel++;
     dotsSinceLifeStart++;
 
-    // Racha de combo
-    dotStreak++;
-    comboTimer = 1.85;
-    if (dotStreak >= 32) comboMultiplier = 4;
-    else if (dotStreak >= 18) comboMultiplier = 3;
-    else if (dotStreak >= 8) comboMultiplier = 2;
-    else comboMultiplier = 1;
+    // Racha de combo y recarga de Turbo Dash (solo cuando Poderes están activos)
+    if (isPowersEnabled()) {
+        dotStreak++;
+        comboTimer = 1.85;
+        if (dotStreak >= 32) comboMultiplier = 4;
+        else if (dotStreak >= 18) comboMultiplier = 3;
+        else if (dotStreak >= 8) comboMultiplier = 2;
+        else comboMultiplier = 1;
 
-    // Recarga de Turbo Dash
-    if (dashTimer <= 0) {
-        dashEnergy = Math.min(100, dashEnergy + (tileVal === 3 ? 20 : 5));
+        if (dashTimer <= 0) {
+            dashEnergy = Math.min(100, dashEnergy + (tileVal === 3 ? 20 : 5));
+        }
+    } else {
+        dotStreak = 0;
+        comboTimer = 0;
+        comboMultiplier = 1;
+        dashEnergy = 0;
     }
 
     const pos = tileCenter(col, row);
@@ -1384,7 +1813,7 @@ function eatTileDot(row, col) {
         dotsEatenInLevel >= ITEM_MILESTONES[nextItemMilestoneIdx]
     ) {
         nextItemMilestoneIdx++;
-        if (!activePowerItem) spawnSpecialItem();
+        spawnSpecialItem(false);
     }
 
     updateStatusStrip();
@@ -1463,10 +1892,22 @@ function updatePacman(dt) {
                 (pacman.dir.y < 0 && prevY > center.y);
 
             if (!canMove(col, row, pacman.dir, false) && (!movingTowardsCenter || crossedCenterX || crossedCenterY)) {
-                // Se detiene limpio frente a la pared (SIN giro automático en esquinas en L)
-                pacman.x = center.x;
-                pacman.y = center.y;
-                pacman.dir = DIRS.NONE;
+                // En Modo Caótico, el Turbo Dash destruye muros internos al embestirlos
+                const targetCol = col + pacman.dir.x;
+                const targetRow = row + pacman.dir.y;
+                if (gameMode === "CHAOS" && dashTimer > 0 && destroyWallTile(targetCol, targetRow)) {
+                    sound.wallBreak();
+                    screenShake = Math.max(screenShake, 0.14);
+                    vibrateShort(14);
+                    pacman.x = nextX;
+                    pacman.y = nextY;
+                    pacman.mouth += dt * 22;
+                } else {
+                    // Se detiene limpio frente a la pared (SIN giro automático en esquinas en L)
+                    pacman.x = center.x;
+                    pacman.y = center.y;
+                    pacman.dir = DIRS.NONE;
+                }
             } else {
                 pacman.x = nextX;
                 pacman.y = nextY;
@@ -1504,7 +1945,7 @@ function updatePacman(dt) {
         }
     }
 
-    // Recoger fruta clásica (independiente de los power-ups)
+    // Recoger fruta clásica o tóxica/podrida (independiente de los power-ups; el imán NO la atrae)
     if (bonusFruit) {
         bonusFruit.timer -= dt;
         if (bonusFruit.timer <= 0) {
@@ -1512,22 +1953,53 @@ function updatePacman(dt) {
         } else if (Math.hypot(pacman.x - bonusFruit.x, pacman.y - bonusFruit.y) < TILE * 0.72) {
             const f = bonusFruit;
             bonusFruit = null;
-            if (dashTimer <= 0) dashEnergy = Math.min(100, dashEnergy + 20);
-            addScore(f.points, f.x, f.y, "#4ade80");
-            sound.fruit();
-            spawnParticles(f.x, f.y, "#ef4444", 12, 95);
+
+            if (f.isRotten) {
+                if (shieldActive || dashTimer > 0) {
+                    // Con Escudo o Turbo Dash la destruye sin penalización y gana +100 pts
+                    addScore(100, f.x, f.y, "#84cc16");
+                    addFloatingText("¡PURIFICADA!", f.x, f.y - 16, "#a3e635");
+                    sound.fruit();
+                    spawnShockwave(f.x, f.y, "#84cc16", 44);
+                    spawnParticles(f.x, f.y, "#84cc16", 12, 100);
+                    spawnParticles(f.x, f.y, "#a855f7", 8, 90);
+                } else {
+                    // Penalización tóxica
+                    const penalty = 100 * level;
+                    score = Math.max(0, score - penalty);
+                    dotStreak = 0;
+                    comboMultiplier = 1;
+                    comboTimer = 0;
+                    dashEnergy = Math.max(0, dashEnergy - 20);
+                    updateHUD();
+                    sound.rottenFruit();
+                    screenShake = 0.2;
+                    vibrateShort(26);
+                    addFloatingText(`-${penalty} ☠️`, f.x, f.y, "#a3e635");
+                    spawnShockwave(f.x, f.y, "#7e22ce", 48);
+                    spawnParticles(f.x, f.y, "#7e22ce", 12, 95);
+                    spawnParticles(f.x, f.y, "#84cc16", 10, 85);
+                }
+            } else {
+                if (dashTimer <= 0) dashEnergy = Math.min(100, dashEnergy + 20);
+                addScore(f.points, f.x, f.y, "#4ade80");
+                sound.fruit();
+                spawnParticles(f.x, f.y, "#ef4444", 12, 95);
+            }
             updateStatusStrip();
         }
     }
 
-    // Recoger objeto especial (Hielo, Imán o Escudo)
-    if (activePowerItem) {
-        activePowerItem.timer -= dt;
-        if (activePowerItem.timer <= 0) {
-            activePowerItem = null;
-        } else if (Math.hypot(pacman.x - activePowerItem.x, pacman.y - activePowerItem.y) < TILE * 0.72) {
-            const item = activePowerItem;
-            activePowerItem = null;
+    // Recoger objetos especiales (Hielo, Imán, Escudo, Corazón o Bomba Destructora)
+    for (let i = powerItems.length - 1; i >= 0; i--) {
+        const item = powerItems[i];
+        item.timer -= dt;
+        if (item.timer <= 0) {
+            powerItems.splice(i, 1);
+            continue;
+        }
+        if (Math.hypot(pacman.x - item.x, pacman.y - item.y) < TILE * 0.72) {
+            powerItems.splice(i, 1);
             if (dashTimer <= 0) dashEnergy = Math.min(100, dashEnergy + 25);
 
             if (item.type === "FREEZE") {
@@ -1555,6 +2027,7 @@ function updatePacman(dt) {
                 if (lives < MAX_LIVES) {
                     lives++;
                     updateHUD();
+                    pulseHudElement(livesEl);
                     addFloatingText("¡+1 VIDA!", item.x, item.y - 16, "#4ade80");
                     sound.extraLife();
                 } else {
@@ -1563,6 +2036,17 @@ function updatePacman(dt) {
                 }
                 spawnShockwave(item.x, item.y, "#4ade80", 80);
                 spawnParticles(item.x, item.y, "#4ade80", 16, 115);
+            } else if (item.type === "BOMB") {
+                const tile = posToTile(item.x, item.y);
+                const broken = destroyWallsInRadius(tile.col, tile.row, 2);
+                addScore(150 + broken * 20, item.x, item.y, "#fb923c");
+                addFloatingText("💥 ¡BOMBA!", item.x, item.y - 16, "#fb923c");
+                sound.bomb();
+                screenShake = 0.32;
+                vibrateShort(30);
+                spawnShockwave(item.x, item.y, "#f97316", 105);
+                spawnShockwave(item.x, item.y, "#facc15", 65);
+                spawnParticles(item.x, item.y, "#f97316", 24, 150);
             }
             updateStatusStrip();
         }
@@ -1576,6 +2060,13 @@ function getGhostTargetTile(ghost) {
         return { col: cfg.ghostGate.col, row: cfg.ghostGate.row };
     }
 
+    const pTile = posToTile(pacman.x, pacman.y);
+
+    // El 5.º fantasma caótico persigue agresivamente a Pac-Man sin importar Scatter
+    if (ghost.isChaosGhost) {
+        return { col: pTile.col, row: pTile.row };
+    }
+
     // Regla original: Blinky "Cruise Elroy" ignora Scatter cuando quedan pocos puntos
     const isCruiseElroy = ghost.type === "chaser" && dotsRemaining <= Math.max(12, Math.floor(totalDotsInLevel * 0.14));
 
@@ -1583,7 +2074,6 @@ function getGhostTargetTile(ghost) {
         return SCATTER_CORNERS[ghost.type] || SCATTER_CORNERS.chaser;
     }
 
-    const pTile = posToTile(pacman.x, pacman.y);
     const pFace = pacman.facingDir || DIRS.RIGHT;
 
     // 1. Blinky (Rojo): persigue directamente la casilla actual de Pac-Man
@@ -1707,7 +2197,25 @@ function updateGhosts(dt) {
     const outsideGate = tileCenter(cfg.ghostGate.col, cfg.ghostGate.row - 1);
     const insideHouse = tileCenter(cfg.ghostGate.col, cfg.ghostGate.row + 1);
 
-    for (const ghost of ghosts) {
+    for (let gi = ghosts.length - 1; gi >= 0; gi--) {
+        const ghost = ghosts[gi];
+
+        // Temporizador del 5.º fantasma caótico (14 segundos)
+        if (ghost.isChaosGhost) {
+            const prevSec = Math.ceil(ghost.chaosTimer);
+            if (freezeTimer <= 0) {
+                ghost.chaosTimer -= dt;
+            }
+            if (Math.ceil(ghost.chaosTimer) !== prevSec) updateStatusStrip();
+            if (ghost.chaosTimer <= 0) {
+                spawnParticles(ghost.x, ghost.y, "#a855f7", 18, 120);
+                spawnShockwave(ghost.x, ghost.y, "#a855f7", 45);
+                ghosts.splice(gi, 1);
+                updateStatusStrip();
+                continue;
+            }
+        }
+
         // 1. Fantasmas esperando en la casa (salida escalonada como en el original)
         if (ghost.state === "IN_HOUSE") {
             ghost.bobPhase += dt * 5;
@@ -1830,8 +2338,14 @@ function checkGhostCollision(ghost) {
             screenShake = 0.16;
             spawnParticles(ghost.x, ghost.y, "#38bdf8", 16, 125);
             spawnShockwave(ghost.x, ghost.y, "#38bdf8", 44);
-            ghost.state = "EATEN";
-            ghost.lastTileKey = "";
+            if (ghost.isChaosGhost) {
+                const idx = ghosts.indexOf(ghost);
+                if (idx !== -1) ghosts.splice(idx, 1);
+                updateStatusStrip();
+            } else {
+                ghost.state = "EATEN";
+                ghost.lastTileKey = "";
+            }
             vibrateShort(18);
             return;
         }
@@ -1848,6 +2362,12 @@ function checkGhostCollision(ghost) {
             spawnParticles(pacman.x, pacman.y, "#c084fc", 24, 150);
             addFloatingText("¡ESCUDO!", pacman.x, pacman.y - 12, "#c084fc");
             vibrateShort(25);
+
+            // En Modo Caótico, la onda del Escudo también destruye muros internos cercanos
+            if (gameMode === "CHAOS") {
+                const pTile = posToTile(pacman.x, pacman.y);
+                destroyWallsInRadius(pTile.col, pTile.row, 2);
+            }
 
             // Asusta brevemente a los fantasmas en el radio de la onda
             for (const g of ghosts) {
@@ -1916,6 +2436,32 @@ function updateTimersAndEffects(dt) {
     if (milestoneBanner) {
         milestoneBanner.life -= dt;
         if (milestoneBanner.life <= 0) milestoneBanner = null;
+    }
+
+    // Eventos exclusivos del Modo Caótico (lluvia de poderes cada 9s + 5.º fantasma)
+    if (state === "PLAYING" && gameMode === "CHAOS") {
+        chaosEventTimer -= dt;
+        if (chaosEventTimer <= 0) {
+            chaosEventTimer = 9;
+            spawnSpecialItem(true);
+        }
+
+        if (!ghosts.some((g) => g.isChaosGhost)) {
+            chaosGhostCooldown -= dt;
+            if (chaosGhostCooldown <= 0) {
+                spawnChaosGhost();
+                chaosGhostCooldown = 22;
+            }
+        }
+    }
+
+    // Auto-guardado periódico cada 3 segundos durante la partida
+    if (state === "PLAYING") {
+        autoSaveTimer += dt;
+        if (autoSaveTimer >= 3) {
+            autoSaveTimer = 0;
+            saveGameState();
+        }
     }
 
     for (let i = dashTrail.length - 1; i >= 0; i--) {
@@ -2086,99 +2632,176 @@ function drawMaze() {
 
 function drawBonusFruit() {
     if (!bonusFruit) return;
-    const { x, y, timer } = bonusFruit;
+    const { x, y, timer, isRotten } = bonusFruit;
     if (timer < 2.2 && Math.floor(timer * 6) % 2 === 0) return;
 
     const bob = Math.sin(animTick * 5.5) * 1.8;
     ctx.save();
     ctx.translate(x, y + bob);
-    ctx.fillStyle = "#ef4444";
-    ctx.beginPath();
-    ctx.arc(-4, 3, 5, 0, Math.PI * 2);
-    ctx.arc(4, 4, 5, 0, Math.PI * 2);
-    ctx.fill();
 
-    ctx.strokeStyle = "#22c55e";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(-4, -1);
-    ctx.quadraticCurveTo(0, -9, 5, -7);
-    ctx.moveTo(4, 0);
-    ctx.lineTo(5, -7);
-    ctx.stroke();
+    if (isRotten) {
+        // Halo tóxico sutil
+        ctx.fillStyle = "rgba(132, 204, 22, 0.2)";
+        ctx.beginPath();
+        ctx.arc(0, 2, 10.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Cerezas morado oscuro (#7e22ce)
+        ctx.fillStyle = "#7e22ce";
+        ctx.beginPath();
+        ctx.arc(-4, 3, 5, 0, Math.PI * 2);
+        ctx.arc(4, 4, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Manchas verde ácido (#84cc16)
+        ctx.fillStyle = "#84cc16";
+        ctx.beginPath();
+        ctx.arc(-5.2, 2, 1.7, 0, Math.PI * 2);
+        ctx.arc(3.5, 5.2, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Tallo verde ácido
+        ctx.strokeStyle = "#84cc16";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-4, -1);
+        ctx.quadraticCurveTo(0, -9, 5, -7);
+        ctx.moveTo(4, 0);
+        ctx.lineTo(5, -7);
+        ctx.stroke();
+
+        // 3 burbujas tóxicas animadas subiendo sobre la fruta
+        for (let b = 0; b < 3; b++) {
+            const phase = (animTick * 1.7 + b * 0.34) % 1;
+            const bx = (b - 1) * 4.5 + Math.sin(animTick * 6 + b * 2) * 1.6;
+            const by = -4 - phase * 12;
+            const br = 1.6 + (1 - phase) * 1.1;
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, 1 - phase);
+            ctx.fillStyle = b % 2 === 0 ? "#84cc16" : "#a855f7";
+            ctx.beginPath();
+            ctx.arc(bx, by, br, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+    } else {
+        ctx.fillStyle = "#ef4444";
+        ctx.beginPath();
+        ctx.arc(-4, 3, 5, 0, Math.PI * 2);
+        ctx.arc(4, 4, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = "#22c55e";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-4, -1);
+        ctx.quadraticCurveTo(0, -9, 5, -7);
+        ctx.moveTo(4, 0);
+        ctx.lineTo(5, -7);
+        ctx.stroke();
+    }
     ctx.restore();
 }
 
 function drawSpecialItem() {
-    if (!activePowerItem) return;
-    const { type, x, y, timer } = activePowerItem;
-    if (timer < 2.5 && Math.floor(timer * 6) % 2 === 0) return;
+    for (const item of powerItems) {
+        const { type, x, y, timer } = item;
+        if (timer < 2.5 && Math.floor(timer * 6) % 2 === 0) continue;
 
-    const bob = Math.sin(animTick * 6) * 2.2;
-    ctx.save();
-    ctx.translate(x, y + bob);
+        const bob = Math.sin(animTick * 6 + x) * 2.2;
+        ctx.save();
+        ctx.translate(x, y + bob);
 
-    if (type === "FREEZE") {
-        ctx.fillStyle = "rgba(56, 189, 248, 0.25)";
-        ctx.beginPath();
-        ctx.arc(0, 0, 10, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = "#38bdf8";
-        ctx.lineWidth = 2;
-        for (let i = 0; i < 3; i++) {
-            const a = (i * Math.PI) / 3 + animTick * 1.2;
+        if (type === "FREEZE") {
+            ctx.fillStyle = "rgba(56, 189, 248, 0.25)";
             ctx.beginPath();
-            ctx.moveTo(-Math.cos(a) * 7, -Math.sin(a) * 7);
-            ctx.lineTo(Math.cos(a) * 7, Math.sin(a) * 7);
+            ctx.arc(0, 0, 10, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = "#38bdf8";
+            ctx.lineWidth = 2;
+            for (let i = 0; i < 3; i++) {
+                const a = (i * Math.PI) / 3 + animTick * 1.2;
+                ctx.beginPath();
+                ctx.moveTo(-Math.cos(a) * 7, -Math.sin(a) * 7);
+                ctx.lineTo(Math.cos(a) * 7, Math.sin(a) * 7);
+                ctx.stroke();
+            }
+        } else if (type === "MAGNET") {
+            ctx.strokeStyle = "#f472b6";
+            ctx.lineWidth = 3.2;
+            ctx.beginPath();
+            ctx.arc(0, 1, 6.5, Math.PI, 0);
+            ctx.lineTo(6.5, 6);
+            ctx.moveTo(-6.5, 1);
+            ctx.lineTo(-6.5, 6);
             ctx.stroke();
+            ctx.fillStyle = "#e2e8f0";
+            ctx.fillRect(-8.2, 4.5, 3.4, 3);
+            ctx.fillRect(4.8, 4.5, 3.4, 3);
+        } else if (type === "SHIELD") {
+            ctx.fillStyle = "rgba(168, 85, 247, 0.3)";
+            ctx.strokeStyle = "#c084fc";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, -8);
+            ctx.lineTo(7, -4);
+            ctx.lineTo(6, 3);
+            ctx.lineTo(0, 8);
+            ctx.lineTo(-6, 3);
+            ctx.lineTo(-7, -4);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+        } else if (type === "LIFE") {
+            ctx.fillStyle = "rgba(74, 222, 128, 0.25)";
+            ctx.beginPath();
+            ctx.arc(0, 0, 10.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = "#4ade80";
+            ctx.strokeStyle = "#dcfce7";
+            ctx.lineWidth = 1.4;
+            ctx.beginPath();
+            ctx.moveTo(0, 6.5);
+            ctx.bezierCurveTo(-9, 1, -8.5, -7, -3.5, -6.5);
+            ctx.bezierCurveTo(-1, -6.2, 0, -4, 0, -3.2);
+            ctx.bezierCurveTo(0, -4, 1, -6.2, 3.5, -6.5);
+            ctx.bezierCurveTo(8.5, -7, 9, 1, 0, 6.5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+        } else if (type === "BOMB") {
+            // Bomba Destructora (Modo Caótico)
+            ctx.fillStyle = "rgba(249, 115, 22, 0.26)";
+            ctx.beginPath();
+            ctx.arc(0, 1, 10.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = "#1e293b";
+            ctx.strokeStyle = "#f97316";
+            ctx.lineWidth = 1.8;
+            ctx.beginPath();
+            ctx.arc(0, 2, 6.8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Mecha y chispa
+            ctx.strokeStyle = "#fde047";
+            ctx.lineWidth = 1.8;
+            ctx.beginPath();
+            ctx.moveTo(2, -4);
+            ctx.quadraticCurveTo(5, -9, 7.5, -7.5);
+            ctx.stroke();
+
+            const sparkR = 2.2 + Math.sin(animTick * 18) * 1;
+            ctx.fillStyle = "#facc15";
+            ctx.beginPath();
+            ctx.arc(7.5, -7.5, sparkR, 0, Math.PI * 2);
+            ctx.fill();
         }
-    } else if (type === "MAGNET") {
-        ctx.strokeStyle = "#f472b6";
-        ctx.lineWidth = 3.2;
-        ctx.beginPath();
-        ctx.arc(0, 1, 6.5, Math.PI, 0);
-        ctx.lineTo(6.5, 6);
-        ctx.moveTo(-6.5, 1);
-        ctx.lineTo(-6.5, 6);
-        ctx.stroke();
-        ctx.fillStyle = "#e2e8f0";
-        ctx.fillRect(-8.2, 4.5, 3.4, 3);
-        ctx.fillRect(4.8, 4.5, 3.4, 3);
-    } else if (type === "SHIELD") {
-        ctx.fillStyle = "rgba(168, 85, 247, 0.3)";
-        ctx.strokeStyle = "#c084fc";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(0, -8);
-        ctx.lineTo(7, -4);
-        ctx.lineTo(6, 3);
-        ctx.lineTo(0, 8);
-        ctx.lineTo(-6, 3);
-        ctx.lineTo(-7, -4);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-    } else if (type === "LIFE") {
-        ctx.fillStyle = "rgba(74, 222, 128, 0.25)";
-        ctx.beginPath();
-        ctx.arc(0, 0, 10.5, 0, Math.PI * 2);
-        ctx.fill();
 
-        ctx.fillStyle = "#4ade80";
-        ctx.strokeStyle = "#dcfce7";
-        ctx.lineWidth = 1.4;
-        ctx.beginPath();
-        ctx.moveTo(0, 6.5);
-        ctx.bezierCurveTo(-9, 1, -8.5, -7, -3.5, -6.5);
-        ctx.bezierCurveTo(-1, -6.2, 0, -4, 0, -3.2);
-        ctx.bezierCurveTo(0, -4, 1, -6.2, 3.5, -6.5);
-        ctx.bezierCurveTo(8.5, -7, 9, 1, 0, 6.5);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
+        ctx.restore();
     }
-
-    ctx.restore();
 }
 
 function drawPacman() {
@@ -2472,13 +3095,20 @@ function gameLoop(timestamp) {
         if (stateTimer <= 0) {
             if (lives <= 0) {
                 state = "GAME_OVER";
+                clearSavedGame();
                 overlayTitleEl.textContent = "GAME OVER";
                 overlaySubEl.textContent = `Puntuación final: ${score} pts • Nivel alcanzado: ${level}`;
-                startBtn.textContent = "JUGAR DE NUEVO";
+                if (savedBannerEl) savedBannerEl.classList.add("hidden");
+                if (menuConfigEl) menuConfigEl.classList.remove("hidden");
+                if (continueBtn) continueBtn.classList.add("hidden");
+                startBtn.classList.remove("btn-secondary");
+                startBtn.classList.add("btn-primary");
+                startBtn.textContent = "▶ JUGAR DE NUEVO";
                 overlayEl.classList.remove("hidden");
             } else {
                 resetPositions(false);
                 beginReadyPhase();
+                saveGameState();
             }
         }
     } else if (state === "LEVEL_CLEAR") {
@@ -2486,8 +3116,19 @@ function gameLoop(timestamp) {
         updateTimersAndEffects(dt);
         if (stateTimer <= 0) {
             level++;
+            if (gameMode === "CHAOS") {
+                if (selectedMapMode === "RANDOM") {
+                    currentLevelIndex = pickChaosMapIndex(currentLevelIndex);
+                } else {
+                    currentLevelIndex = (currentLevelIndex + 1) % LEVELS.length;
+                }
+            } else {
+                currentLevelIndex = (level - 1) % LEVELS.length;
+            }
+            lastPlayedMapIndex = currentLevelIndex;
             loadLevel();
             beginReadyPhase();
+            saveGameState();
         }
     }
 
@@ -2509,7 +3150,7 @@ const unlockMenuAudio = (e) => {
         window.removeEventListener("keydown", unlockMenuAudio);
         return;
     }
-    if (e && e.target && e.target.closest && e.target.closest("#start-btn")) return;
+    if (e && e.target && e.target.closest && e.target.closest("#start-btn, #continue-btn")) return;
     startMenuMusic();
 };
 
@@ -2792,15 +3433,345 @@ if (dpadZone) {
     dpadButtons.forEach((b) => b.addEventListener("click", (e) => e.preventDefault()));
 }
 
-function togglePause() {
-    if (state === "PLAYING") {
+// =========================================================================
+// 4) Auto-guardado y comportamiento tipo app nativa (pacman_offline_savestate)
+// =========================================================================
+function dirToKey(dir) {
+    if (!dir) return "NONE";
+    if (dir.x === 0 && dir.y === -1) return "UP";
+    if (dir.x === 0 && dir.y === 1) return "DOWN";
+    if (dir.x === -1 && dir.y === 0) return "LEFT";
+    if (dir.x === 1 && dir.y === 0) return "RIGHT";
+    return "NONE";
+}
+
+function keyToDir(key) {
+    return DIRS[key] || DIRS.NONE;
+}
+
+function clearSavedGame() {
+    try {
+        localStorage.removeItem(SAVE_KEY);
+    } catch (_) { }
+}
+
+function saveGameState() {
+    if (
+        (state !== "PLAYING" && state !== "PAUSED" && state !== "READY") ||
+        lives <= 0 ||
+        !grid ||
+        grid.length !== ROWS
+    ) {
+        return;
+    }
+
+    const payload = {
+        version: 1,
+        savedAt: Date.now(),
+        mode: gameMode,
+        arcadeSubMode,
+        selectedMapMode,
+        currentLevelIndex,
+        score,
+        level,
+        lives,
+        nextExtraLifeScore,
+        grid: cloneMap(grid),
+        totalDotsInLevel,
+        dotsRemaining,
+        dotsEatenInLevel,
+        dotsSinceLifeStart,
+        ghostHouseTimer,
+        nextFruitMilestoneIdx,
+        nextItemMilestoneIdx,
+        lifeSpawnedInLevel,
+        waveIndex,
+        waveTimer: waveTimer === Infinity ? "INF" : waveTimer,
+        globalGhostMode,
+        pacman: {
+            x: pacman.x,
+            y: pacman.y,
+            dir: dirToKey(pacman.dir),
+            nextDir: dirToKey(pacman.nextDir),
+            facingDir: dirToKey(pacman.facingDir),
+            speed: pacman.speed,
+            mouth: pacman.mouth
+        },
+        ghosts: ghosts.map((g) => ({
+            x: g.x,
+            y: g.y,
+            dir: dirToKey(g.dir),
+            color: g.color,
+            type: g.type,
+            name: g.name,
+            speed: g.speed,
+            state: g.state,
+            homeX: g.homeX,
+            homeY: g.homeY,
+            releaseDots: g.releaseDots,
+            releaseTime: g.releaseTime,
+            reversePending: !!g.reversePending,
+            recoveredFromPower: !!g.recoveredFromPower,
+            isChaosGhost: !!g.isChaosGhost,
+            chaosTimer: g.chaosTimer || 0,
+            bobPhase: g.bobPhase || 0
+        })),
+        turbo: {
+            dashEnergy,
+            dashTimer
+        },
+        combo: {
+            dotStreak,
+            comboTimer,
+            comboMultiplier
+        },
+        powers: {
+            frightenedTimer,
+            ghostCombo,
+            freezeTimer,
+            magnetTimer,
+            shieldActive,
+            invulnTimer,
+            chaosEventTimer,
+            chaosGhostCooldown
+        },
+        bonusFruit: bonusFruit ? { ...bonusFruit } : null,
+        powerItems: powerItems.map((it) => ({ ...it }))
+    };
+
+    try {
+        localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
+    } catch (_) { }
+}
+
+function readSavedGame() {
+    try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (!raw) return null;
+        const data = JSON.parse(raw);
+        if (
+            !data ||
+            !Array.isArray(data.grid) ||
+            data.grid.length !== ROWS ||
+            !Array.isArray(data.grid[0]) ||
+            data.grid[0].length !== COLS ||
+            typeof data.lives !== "number" ||
+            data.lives <= 0 ||
+            !data.pacman ||
+            !Array.isArray(data.ghosts) ||
+            data.ghosts.length === 0
+        ) {
+            return null;
+        }
+        return data;
+    } catch (_) {
+        return null;
+    }
+}
+
+function restoreSavedGame() {
+    const data = readSavedGame();
+    if (!data) return false;
+
+    sound.init();
+    sound.stopIntro();
+
+    gameMode = data.mode === "CHAOS" ? "CHAOS" : "ARCADE";
+    arcadeSubMode = data.arcadeSubMode === "NORMAL" ? "NORMAL" : "POWERS";
+    selectedMapMode = data.selectedMapMode || "RANDOM";
+    applyArcadeSubMode(arcadeSubMode);
+    applyGameMode(gameMode);
+    if (mapSelectEl) mapSelectEl.value = selectedMapMode;
+
+    currentLevelIndex = Math.max(0, Math.min(LEVELS.length - 1, Number(data.currentLevelIndex) || 0));
+    lastPlayedMapIndex = currentLevelIndex;
+
+    score = Math.max(0, Number(data.score) || 0);
+    level = Math.max(1, Number(data.level) || 1);
+    lives = Math.max(1, Math.min(MAX_LIVES, Number(data.lives) || START_LIVES));
+    nextExtraLifeScore = Math.max(EXTRA_LIFE_STEP, Number(data.nextExtraLifeScore) || EXTRA_LIFE_STEP);
+
+    grid = cloneMap(data.grid);
+    totalDotsInLevel = Math.max(1, Number(data.totalDotsInLevel) || 1);
+    dotsRemaining = Math.max(1, Number(data.dotsRemaining) || 1);
+    dotsEatenInLevel = Math.max(0, Number(data.dotsEatenInLevel) || 0);
+    dotsSinceLifeStart = Math.max(0, Number(data.dotsSinceLifeStart) || 0);
+    ghostHouseTimer = Math.max(0, Number(data.ghostHouseTimer) || 0);
+
+    nextFruitMilestoneIdx = Math.max(0, Number(data.nextFruitMilestoneIdx) || 0);
+    nextItemMilestoneIdx = Math.max(0, Number(data.nextItemMilestoneIdx) || 0);
+    lifeSpawnedInLevel = !!data.lifeSpawnedInLevel;
+
+    waveSchedule = getWaveSchedule(level);
+    waveIndex = Math.max(0, Math.min(waveSchedule.length - 1, Number(data.waveIndex) || 0));
+    waveTimer = data.waveTimer === "INF" ? Infinity : Math.max(0, Number(data.waveTimer) || 5);
+    globalGhostMode = data.globalGhostMode === "CHASE" ? "CHASE" : "SCATTER";
+
+    pacman = {
+        x: Number(data.pacman.x),
+        y: Number(data.pacman.y),
+        dir: keyToDir(data.pacman.dir),
+        nextDir: keyToDir(data.pacman.nextDir),
+        facingDir: keyToDir(data.pacman.facingDir) || DIRS.RIGHT,
+        speed: Number(data.pacman.speed) || (112 + Math.min(level - 1, 5) * 4),
+        mouth: Number(data.pacman.mouth) || 0
+    };
+
+    ghosts = data.ghosts.map((g) => ({
+        x: Number(g.x),
+        y: Number(g.y),
+        dir: keyToDir(g.dir),
+        color: g.color || "#ef4444",
+        type: g.type || "chaser",
+        name: g.name || "Ghost",
+        speed: Number(g.speed) || 92,
+        state: g.state || "NORMAL",
+        homeX: Number(g.homeX),
+        homeY: Number(g.homeY),
+        releaseDots: Number(g.releaseDots) || 0,
+        releaseTime: Number(g.releaseTime) || 0,
+        reversePending: !!g.reversePending,
+        recoveredFromPower: !!g.recoveredFromPower,
+        isChaosGhost: !!g.isChaosGhost,
+        chaosTimer: Number(g.chaosTimer) || 0,
+        lastTileKey: "",
+        bobPhase: Number(g.bobPhase) || 0
+    }));
+
+    dashEnergy = Math.max(0, Math.min(100, Number(data.turbo?.dashEnergy) || 0));
+    dashTimer = Math.max(0, Number(data.turbo?.dashTimer) || 0);
+    dashTrail = [];
+
+    dotStreak = Math.max(0, Number(data.combo?.dotStreak) || 0);
+    comboTimer = Math.max(0, Number(data.combo?.comboTimer) || 0);
+    comboMultiplier = Math.max(1, Number(data.combo?.comboMultiplier) || 1);
+
+    frightenedTimer = Math.max(0, Number(data.powers?.frightenedTimer) || 0);
+    ghostCombo = Math.max(0, Number(data.powers?.ghostCombo) || 0);
+    freezeTimer = Math.max(0, Number(data.powers?.freezeTimer) || 0);
+    magnetTimer = Math.max(0, Number(data.powers?.magnetTimer) || 0);
+    shieldActive = !!data.powers?.shieldActive;
+    invulnTimer = Math.max(0, Number(data.powers?.invulnTimer) || 0);
+    chaosEventTimer = Math.max(0.5, Number(data.powers?.chaosEventTimer) || 9);
+    chaosGhostCooldown = Math.max(1, Number(data.powers?.chaosGhostCooldown) || 14);
+
+    bonusFruit = data.bonusFruit ? { ...data.bonusFruit } : null;
+    powerItems = Array.isArray(data.powerItems) ? data.powerItems.map((it) => ({ ...it })) : [];
+
+    floatingTexts = [];
+    particles = [];
+    shockwaves = [];
+    milestoneBanner = null;
+
+    const cfg = getLevelConfig();
+    if (cfg.theme) {
+        canvas.style.borderColor = cfg.theme.wallStroke;
+        canvas.style.boxShadow = `0 0 26px ${cfg.theme.glow}`;
+    }
+
+    updateHUD();
+    updateStatusStrip();
+
+    overlayEl.classList.add("hidden");
+    if (menuConfigEl) menuConfigEl.classList.add("hidden");
+    if (savedBannerEl) savedBannerEl.classList.add("hidden");
+    if (continueBtn) continueBtn.classList.add("hidden");
+    pauseBtn.classList.remove("is-paused");
+    pauseLabelEl.textContent = "Pausar";
+
+    beginReadyPhase();
+    return true;
+}
+
+function refreshMenuOverlay() {
+    const saved = readSavedGame();
+    overlayTitleEl.textContent = "PAC-MAN";
+    if (menuConfigEl) menuConfigEl.classList.remove("hidden");
+
+    if (saved) {
+        const modeTag =
+            saved.mode === "CHAOS"
+                ? "Caótico"
+                : saved.arcadeSubMode === "NORMAL"
+                    ? "Arcade Normal"
+                    : "Arcade Poderes";
+        overlaySubEl.textContent = "Tienes una partida en curso lista para continuar";
+        if (savedBannerEl) {
+            savedBannerEl.textContent = `💾 Nivel ${saved.level} • ${saved.score} pts • ${modeTag}`;
+            savedBannerEl.classList.remove("hidden");
+        }
+        if (continueBtn) {
+            continueBtn.textContent = "▶ CONTINUAR PARTIDA";
+            continueBtn.classList.remove("hidden");
+        }
+        startBtn.textContent = "↻ NUEVA PARTIDA";
+        startBtn.classList.remove("btn-primary");
+        startBtn.classList.add("btn-secondary");
+    } else {
+        overlaySubEl.textContent = "Elige tu modo y prepárate para jugar";
+        if (savedBannerEl) savedBannerEl.classList.add("hidden");
+        if (continueBtn) continueBtn.classList.add("hidden");
+        startBtn.textContent = "▶ JUGAR";
+        startBtn.classList.remove("btn-secondary");
+        startBtn.classList.add("btn-primary");
+    }
+}
+
+function pauseForBackground() {
+    if (state === "PLAYING" || state === "READY") {
         state = "PAUSED";
         sound.stopAllLoops();
+        saveGameState();
+        pauseBtn.classList.add("is-paused");
+        pauseLabelEl.textContent = "Pausado";
+        overlayTitleEl.textContent = "PAUSA";
+        overlaySubEl.textContent = "Partida guardada • Pulsa Continuar para seguir";
+        if (savedBannerEl) savedBannerEl.classList.add("hidden");
+        if (menuConfigEl) menuConfigEl.classList.add("hidden");
+        if (continueBtn) {
+            continueBtn.textContent = "▶ CONTINUAR";
+            continueBtn.classList.remove("hidden");
+        }
+        startBtn.textContent = "↻ NUEVA PARTIDA";
+        startBtn.classList.remove("btn-primary");
+        startBtn.classList.add("btn-secondary");
+        overlayEl.classList.remove("hidden");
+    } else if (state === "PAUSED") {
+        sound.stopAllLoops();
+        saveGameState();
+    } else if (state === "MENU") {
+        sound.stopIntro();
+    }
+}
+
+document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+        pauseForBackground();
+    }
+});
+
+window.addEventListener("pagehide", () => {
+    pauseForBackground();
+});
+
+function togglePause() {
+    if (state === "PLAYING" || state === "READY") {
+        state = "PAUSED";
+        sound.stopAllLoops();
+        saveGameState();
         pauseBtn.classList.add("is-paused");
         pauseLabelEl.textContent = "Pausado";
         overlayTitleEl.textContent = "PAUSA";
         overlaySubEl.textContent = "Presiona P o Continuar para seguir";
-        startBtn.textContent = "CONTINUAR";
+        if (savedBannerEl) savedBannerEl.classList.add("hidden");
+        if (menuConfigEl) menuConfigEl.classList.add("hidden");
+        if (continueBtn) {
+            continueBtn.textContent = "▶ CONTINUAR";
+            continueBtn.classList.remove("hidden");
+        }
+        startBtn.textContent = "↻ NUEVA PARTIDA";
+        startBtn.classList.remove("btn-primary");
+        startBtn.classList.add("btn-secondary");
         overlayEl.classList.remove("hidden");
     } else if (state === "PAUSED") {
         state = "PLAYING";
@@ -2833,12 +3804,20 @@ function toggleMute() {
     }
 }
 
+if (continueBtn) {
+    continueBtn.addEventListener("click", () => {
+        if (state === "PAUSED") {
+            togglePause();
+        } else {
+            if (!restoreSavedGame()) {
+                startNewGame();
+            }
+        }
+    });
+}
+
 startBtn.addEventListener("click", () => {
-    if (state === "PAUSED") {
-        togglePause();
-    } else {
-        startNewGame();
-    }
+    startNewGame();
 });
 
 pauseBtn.addEventListener("click", togglePause);
@@ -2851,8 +3830,9 @@ if ("serviceWorker" in navigator && window.location.protocol.startsWith("http"))
     });
 }
 
-// Inicializar vista previa del mapa e intentar iniciar música de intro automáticamente
+// Inicializar vista previa del mapa, comprobar guardado e intentar iniciar música de intro
 loadLevel();
+refreshMenuOverlay();
 startMenuMusic();
 requestAnimationFrame((t) => {
     lastTime = t;

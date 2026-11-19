@@ -38,7 +38,7 @@
         </div>
       </header>
 
-      <div class="status-strip" aria-label="Estado de habilidades">
+      <div id="status-strip" class="status-strip" aria-label="Estado de habilidades">
         <div class="dash-meter" title="Espacio / Shift o doble toque para Turbo">
           <span class="strip-label">⚡ TURBO</span>
           <div class="dash-bar-bg">
@@ -54,15 +54,70 @@
         <canvas id="gameCanvas" width="456" height="504"></canvas>
 
         <div id="overlay" class="overlay">
-          <h1 id="overlay-title">PAC-MAN</h1>
-          <p id="overlay-subtitle">
-            Desliza el dedo, usa joystick, cruceta o flechas
-          </p>
-          <button id="start-btn" class="btn-primary">JUGAR</button>
+          <div class="menu-card">
+            <div class="menu-header">
+              <span class="menu-badge">ARCADE OFFLINE</span>
+              <h1 id="overlay-title">PAC-MAN</h1>
+              <p id="overlay-subtitle">
+                Elige tu modo y prepárate para jugar
+              </p>
+            </div>
+
+            <div id="saved-banner" class="saved-banner hidden"></div>
+
+            <div id="menu-config" class="menu-config">
+              <div class="mode-selector" role="radiogroup" aria-label="Modo de juego">
+                <button type="button" id="mode-arcade-btn" class="mode-pill active" data-mode="ARCADE">
+                  <span class="mode-icon">🕹️</span>
+                  <span class="mode-name">Arcade</span>
+                  <span class="mode-sub">10 niveles</span>
+                </button>
+                <button type="button" id="mode-chaos-btn" class="mode-pill" data-mode="CHAOS">
+                  <span class="mode-icon">🔥</span>
+                  <span class="mode-name">Caótico</span>
+                  <span class="mode-sub">Destrucción</span>
+                </button>
+              </div>
+
+              <!-- Sub-selector para Modo Arcade: Normal vs Poderes -->
+              <div id="arcade-sub-wrap" class="submode-panel">
+                <span class="panel-label">Estilo de Arcade</span>
+                <div class="submode-selector" role="radiogroup" aria-label="Estilo de Arcade">
+                  <button type="button" id="arcade-normal-btn" class="submode-pill" data-sub="NORMAL">
+                    🟡 Normal
+                  </button>
+                  <button type="button" id="arcade-powers-btn" class="submode-pill active" data-sub="POWERS">
+                    ⚡ Poderes
+                  </button>
+                </div>
+                <p id="arcade-sub-desc" class="mode-desc">
+                  Con Turbo, Combo, Hielo, Imán, Escudo y frutas especiales
+                </p>
+              </div>
+
+              <!-- Panel de opciones para Modo Caótico -->
+              <div id="chaos-map-wrap" class="submode-panel chaos-panel hidden">
+                <div class="chaos-chips">
+                  <span class="chaos-chip">💥 Muros</span>
+                  <span class="chaos-chip">🌧️ Lluvia 9s</span>
+                  <span class="chaos-chip">👾 5.º Fantasma</span>
+                </div>
+                <div class="map-select-row">
+                  <label for="map-select" class="map-select-label">🗺️ Mapa:</label>
+                  <select id="map-select" class="map-select"></select>
+                </div>
+              </div>
+            </div>
+
+            <div class="overlay-actions">
+              <button id="continue-btn" class="btn-primary hidden">▶ CONTINUAR PARTIDA</button>
+              <button id="start-btn" class="btn-primary">▶ JUGAR</button>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="toolbar" role="group" aria-label="Opciones del juego">
+      <div id="toolbar" class="toolbar" role="group" aria-label="Opciones del juego">
         <button id="pause-btn" class="arcade-btn" title="Tecla P">
           <span class="btn-top">
             <svg
