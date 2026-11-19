@@ -102,15 +102,24 @@
                   <span class="chaos-chip">🌧️ Lluvia 9s</span>
                   <span class="chaos-chip">👾 5.º Fantasma</span>
                 </div>
-                <div class="map-select-row">
-                  <label for="map-select" class="map-select-label">🗺️ Mapa:</label>
-                  <select id="map-select" class="map-select"></select>
+                <div class="map-picker" aria-label="Selector de laberinto">
+                  <button type="button" id="map-prev-btn" class="map-nav-btn" aria-label="Mapa anterior">◀</button>
+                  <button type="button" id="map-current-btn" class="map-current-display" title="Toca para volver a Aleatorio">
+                    <span id="map-swatch" class="map-swatch"></span>
+                    <span class="map-current-info">
+                      <span id="map-current-name" class="map-current-name">🎲 Mapa Aleatorio</span>
+                      <span id="map-current-meta" class="map-current-meta">Al azar entre 10 mapas</span>
+                    </span>
+                  </button>
+                  <button type="button" id="map-next-btn" class="map-nav-btn" aria-label="Mapa siguiente">▶</button>
                 </div>
+                <div id="map-dots" class="map-dots" role="group" aria-label="Acceso rápido a laberintos"></div>
               </div>
             </div>
 
             <div class="overlay-actions">
               <button id="continue-btn" class="btn-primary hidden">▶ CONTINUAR PARTIDA</button>
+              <button id="menu-btn" class="btn-secondary hidden">🏠 MENÚ PRINCIPAL</button>
               <button id="start-btn" class="btn-primary">▶ JUGAR</button>
             </div>
           </div>

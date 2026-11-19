@@ -17,8 +17,15 @@ const arcadeNormalBtn = document.getElementById("arcade-normal-btn");
 const arcadePowersBtn = document.getElementById("arcade-powers-btn");
 const arcadeSubDescEl = document.getElementById("arcade-sub-desc");
 const chaosMapWrap = document.getElementById("chaos-map-wrap");
-const mapSelectEl = document.getElementById("map-select");
+const mapPrevBtn = document.getElementById("map-prev-btn");
+const mapNextBtn = document.getElementById("map-next-btn");
+const mapCurrentBtn = document.getElementById("map-current-btn");
+const mapSwatchEl = document.getElementById("map-swatch");
+const mapCurrentNameEl = document.getElementById("map-current-name");
+const mapCurrentMetaEl = document.getElementById("map-current-meta");
+const mapDotsEl = document.getElementById("map-dots");
 const continueBtn = document.getElementById("continue-btn");
+const menuBtn = document.getElementById("menu-btn");
 const startBtn = document.getElementById("start-btn");
 const statusStripEl = document.getElementById("status-strip");
 const toolbarEl = document.getElementById("toolbar");
@@ -1163,22 +1170,94 @@ function getLevelConfig() {
     return LEVELS[currentLevelIndex] || LEVELS[0];
 }
 
-function populateMapSelector() {
-    if (!mapSelectEl) return;
-    mapSelectEl.innerHTML = `<option value="RANDOM">🎲 Mapa Aleatorio</option>`;
-    LEVELS.forEach((lvl, idx) => {
-        const opt = document.createElement("option");
-        opt.value = String(idx);
-        opt.textContent = lvl.name;
-        mapSelectEl.appendChild(opt);
-    });
+const MAP_OPTIONS = ["RANDOM", ...LEVELS.map((_, i) => String(i))];
+
+function updateMapPickerUI() {
     if (selectedMapMode !== "RANDOM") {
         const parsed = Number(selectedMapMode);
         if (!Number.isInteger(parsed) || parsed < 0 || parsed >= LEVELS.length) {
             selectedMapMode = "RANDOM";
         }
     }
-    mapSelectEl.value = selectedMapMode;
+
+    if (selectedMapMode === "RANDOM") {
+        if (mapCurrentNameEl) mapCurrentNameEl.textContent = "🎲 Mapa Aleatorio";
+        if (mapCurrentMetaEl) mapCurrentMetaEl.textContent = `Al azar entre ${LEVELS.length} laberintos`;
+        if (mapSwatchEl) {
+            mapSwatchEl.style.background = "linear-gradient(135deg, #38bdf8, #a855f7, #facc15)";
+            mapSwatchEl.style.boxShadow = "0 0 9px rgba(168, 85, 247, 0.8)";
+        }
+    } else {
+        const idx = Number(selectedMapMode);
+        const lvl = LEVELS[idx];
+        const color = lvl.theme?.wallStroke || "#38bdf8";
+        if (mapCurrentNameEl) mapCurrentNameEl.textContent = lvl.name;
+        if (mapCurrentMetaEl) mapCurrentMetaEl.textContent = `Laberinto ${idx + 1} de ${LEVELS.length} • Toca para Aleatorio`;
+        if (mapSwatchEl) {
+            mapSwatchEl.style.background = color;
+            mapSwatchEl.style.boxShadow = `0 0 10px ${color}`;
+        }
+    }
+
+    if (mapDotsEl) {
+        const dots = mapDotsEl.querySelectorAll(".map-dot");
+        dots.forEach((dot) => {
+            const val = dot.dataset.val;
+            const isActive = val === selectedMapMode;
+            dot.classList.toggle("active", isActive);
+            if (isActive) {
+                const c = dot.dataset.color || "#a855f7";
+                dot.style.background = c;
+                dot.style.boxShadow = `0 0 8px ${c}`;
+            } else {
+                dot.style.background = "";
+                dot.style.boxShadow = "";
+            }
+        });
+    }
+}
+
+function setSelectedMapMode(val, previewOnCanvas = true) {
+    selectedMapMode = val;
+    localStorage.setItem("pacman_offline_mapmode", selectedMapMode);
+    updateMapPickerUI();
+    if (previewOnCanvas && state === "MENU" && gameMode === "CHAOS") {
+        if (selectedMapMode !== "RANDOM") {
+            currentLevelIndex = Number(selectedMapMode);
+            loadLevel();
+        }
+    }
+}
+
+function populateMapSelector() {
+    if (!mapDotsEl) return;
+    mapDotsEl.innerHTML = "";
+
+    const randBtn = document.createElement("button");
+    randBtn.type = "button";
+    randBtn.className = "map-dot";
+    randBtn.dataset.val = "RANDOM";
+    randBtn.dataset.color = "#c084fc";
+    randBtn.title = "Mapa Aleatorio";
+    randBtn.textContent = "🎲";
+    randBtn.addEventListener("click", () => setSelectedMapMode("RANDOM"));
+    mapDotsEl.appendChild(randBtn);
+
+    LEVELS.forEach((lvl, idx) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "map-dot";
+        btn.dataset.val = String(idx);
+        const col = lvl.theme?.wallStroke || "#38bdf8";
+        btn.dataset.color = col;
+        btn.style.borderColor = `${col}66`;
+        btn.title = lvl.name;
+        btn.textContent = String(idx + 1);
+        btn.addEventListener("click", () => setSelectedMapMode(String(idx)));
+        mapDotsEl.appendChild(btn);
+    });
+
+    updateMapPickerUI();
 }
 
 function isPowersEnabled() {
@@ -1246,14 +1325,23 @@ if (arcadeNormalBtn) {
 if (arcadePowersBtn) {
     arcadePowersBtn.addEventListener("click", () => applyArcadeSubMode("POWERS"));
 }
-if (mapSelectEl) {
-    mapSelectEl.addEventListener("change", () => {
-        selectedMapMode = mapSelectEl.value;
-        localStorage.setItem("pacman_offline_mapmode", selectedMapMode);
-        if (state === "MENU" && gameMode === "CHAOS" && selectedMapMode !== "RANDOM") {
-            currentLevelIndex = Number(selectedMapMode);
-            loadLevel();
-        }
+if (mapPrevBtn) {
+    mapPrevBtn.addEventListener("click", () => {
+        const idx = MAP_OPTIONS.indexOf(selectedMapMode);
+        const nextIdx = (idx - 1 + MAP_OPTIONS.length) % MAP_OPTIONS.length;
+        setSelectedMapMode(MAP_OPTIONS[nextIdx]);
+    });
+}
+if (mapNextBtn) {
+    mapNextBtn.addEventListener("click", () => {
+        const idx = MAP_OPTIONS.indexOf(selectedMapMode);
+        const nextIdx = (idx + 1) % MAP_OPTIONS.length;
+        setSelectedMapMode(MAP_OPTIONS[nextIdx]);
+    });
+}
+if (mapCurrentBtn) {
+    mapCurrentBtn.addEventListener("click", () => {
+        setSelectedMapMode("RANDOM");
     });
 }
 
@@ -1530,6 +1618,7 @@ function startNewGame() {
     if (menuConfigEl) menuConfigEl.classList.add("hidden");
     if (savedBannerEl) savedBannerEl.classList.add("hidden");
     if (continueBtn) continueBtn.classList.add("hidden");
+    if (menuBtn) menuBtn.classList.add("hidden");
     pauseBtn.classList.remove("is-paused");
     pauseLabelEl.textContent = "Pausar";
     beginReadyPhase();
@@ -3101,6 +3190,7 @@ function gameLoop(timestamp) {
                 if (savedBannerEl) savedBannerEl.classList.add("hidden");
                 if (menuConfigEl) menuConfigEl.classList.remove("hidden");
                 if (continueBtn) continueBtn.classList.add("hidden");
+                if (menuBtn) menuBtn.classList.add("hidden");
                 startBtn.classList.remove("btn-secondary");
                 startBtn.classList.add("btn-primary");
                 startBtn.textContent = "▶ JUGAR DE NUEVO";
@@ -3581,7 +3671,7 @@ function restoreSavedGame() {
     selectedMapMode = data.selectedMapMode || "RANDOM";
     applyArcadeSubMode(arcadeSubMode);
     applyGameMode(gameMode);
-    if (mapSelectEl) mapSelectEl.value = selectedMapMode;
+    updateMapPickerUI();
 
     currentLevelIndex = Math.max(0, Math.min(LEVELS.length - 1, Number(data.currentLevelIndex) || 0));
     lastPlayedMapIndex = currentLevelIndex;
@@ -3676,6 +3766,7 @@ function restoreSavedGame() {
     if (menuConfigEl) menuConfigEl.classList.add("hidden");
     if (savedBannerEl) savedBannerEl.classList.add("hidden");
     if (continueBtn) continueBtn.classList.add("hidden");
+    if (menuBtn) menuBtn.classList.add("hidden");
     pauseBtn.classList.remove("is-paused");
     pauseLabelEl.textContent = "Pausar";
 
@@ -3683,10 +3774,25 @@ function restoreSavedGame() {
     return true;
 }
 
+function goToMainMenu() {
+    if (state === "PLAYING" || state === "READY" || state === "PAUSED") {
+        saveGameState();
+    }
+    state = "MENU";
+    sound.stopAllLoops();
+    pauseBtn.classList.remove("is-paused");
+    pauseLabelEl.textContent = "Pausar";
+    if (menuBtn) menuBtn.classList.add("hidden");
+    refreshMenuOverlay();
+    overlayEl.classList.remove("hidden");
+    startMenuMusic();
+}
+
 function refreshMenuOverlay() {
     const saved = readSavedGame();
     overlayTitleEl.textContent = "PAC-MAN";
     if (menuConfigEl) menuConfigEl.classList.remove("hidden");
+    if (menuBtn) menuBtn.classList.add("hidden");
 
     if (saved) {
         const modeTag =
@@ -3732,6 +3838,7 @@ function pauseForBackground() {
             continueBtn.textContent = "▶ CONTINUAR";
             continueBtn.classList.remove("hidden");
         }
+        if (menuBtn) menuBtn.classList.remove("hidden");
         startBtn.textContent = "↻ NUEVA PARTIDA";
         startBtn.classList.remove("btn-primary");
         startBtn.classList.add("btn-secondary");
@@ -3769,6 +3876,7 @@ function togglePause() {
             continueBtn.textContent = "▶ CONTINUAR";
             continueBtn.classList.remove("hidden");
         }
+        if (menuBtn) menuBtn.classList.remove("hidden");
         startBtn.textContent = "↻ NUEVA PARTIDA";
         startBtn.classList.remove("btn-primary");
         startBtn.classList.add("btn-secondary");
@@ -3814,6 +3922,10 @@ if (continueBtn) {
             }
         }
     });
+}
+
+if (menuBtn) {
+    menuBtn.addEventListener("click", goToMainMenu);
 }
 
 startBtn.addEventListener("click", () => {
