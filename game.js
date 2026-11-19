@@ -865,6 +865,7 @@ const ITEM_MILESTONES = [22, 65, 110];
 let floatingTexts = [];
 let particles = [];
 let shockwaves = [];
+let milestoneBanner = null; // { title, subtitle, color, life, maxLife }
 let screenShake = 0;
 
 let lastTime = 0;
@@ -1154,6 +1155,7 @@ function loadLevel() {
     floatingTexts = [];
     particles = [];
     shockwaves = [];
+    milestoneBanner = null;
 
     for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c < COLS; c++) {
@@ -1206,17 +1208,51 @@ function updateHUD() {
     livesEl.textContent = lives > 0 ? `🟡 ×${lives}` : "👻";
 }
 
+function pulseHudElement(el) {
+    if (!el) return;
+    el.classList.remove("hud-pop");
+    void el.offsetWidth;
+    el.classList.add("hud-pop");
+}
+
+function showMilestoneBanner(title, subtitle, color) {
+    milestoneBanner = {
+        title,
+        subtitle,
+        color,
+        life: 2.3,
+        maxLife: 2.3
+    };
+}
+
 function addScore(points, x, y, color = "#facc15") {
     score += points;
-    if (score >= nextExtraLifeScore) {
+    while (score >= nextExtraLifeScore) {
+        const milestone = nextExtraLifeScore;
         nextExtraLifeScore += 5000;
+        const label = milestone.toLocaleString("es-ES");
+
+        sound.extraLife();
+        vibrateShort(24);
+
         if (lives < MAX_LIVES) {
             lives++;
-            sound.extraLife();
+            showMilestoneBanner(`🎉 ¡${label} PUNTOS!`, "💚 +1 VIDA EXTRA", "#4ade80");
             addFloatingText("¡+1 VIDA!", pacman.x, pacman.y - 18, "#4ade80");
-            spawnShockwave(pacman.x, pacman.y, "#4ade80", 78);
-            spawnParticles(pacman.x, pacman.y, "#4ade80", 16, 115);
-            vibrateShort(22);
+            spawnShockwave(pacman.x, pacman.y, "#4ade80", 90);
+            spawnShockwave(pacman.x, pacman.y, "#facc15", 56);
+            spawnParticles(pacman.x, pacman.y, "#4ade80", 16, 130);
+            spawnParticles(pacman.x, pacman.y, "#facc15", 10, 100);
+            pulseHudElement(livesEl);
+        } else {
+            score += 500;
+            showMilestoneBanner(`🏆 ¡${label} PUNTOS!`, "VIDAS AL MÁX • +500 BONUS", "#facc15");
+            addFloatingText("+500 BONUS!", pacman.x, pacman.y - 18, "#facc15");
+            spawnShockwave(pacman.x, pacman.y, "#facc15", 90);
+            spawnShockwave(pacman.x, pacman.y, "#38bdf8", 56);
+            spawnParticles(pacman.x, pacman.y, "#facc15", 18, 135);
+            spawnParticles(pacman.x, pacman.y, "#38bdf8", 10, 100);
+            pulseHudElement(scoreEl);
         }
     }
     updateHUD();
@@ -1877,6 +1913,11 @@ function updateTimersAndEffects(dt) {
         screenShake = Math.max(0, screenShake - dt);
     }
 
+    if (milestoneBanner) {
+        milestoneBanner.life -= dt;
+        if (milestoneBanner.life <= 0) milestoneBanner = null;
+    }
+
     for (let i = dashTrail.length - 1; i >= 0; i--) {
         dashTrail[i].life -= dt;
         if (dashTrail[i].life <= 0) dashTrail.splice(i, 1);
@@ -2320,6 +2361,55 @@ function drawFloatingTexts(dt) {
     }
 }
 
+function drawMilestoneBanner() {
+    if (!milestoneBanner) return;
+    const b = milestoneBanner;
+    const elapsed = b.maxLife - b.life;
+
+    // Animación suave de entrada (rebote) y salida (desvanecimiento)
+    let scale = 1;
+    let alpha = 1;
+    if (elapsed < 0.18) {
+        const t = elapsed / 0.18;
+        scale = 0.72 + t * 0.34;
+        alpha = t;
+    } else if (elapsed < 0.28) {
+        const t = (elapsed - 0.18) / 0.1;
+        scale = 1.06 - t * 0.06;
+    } else if (b.life < 0.4) {
+        alpha = Math.max(0, b.life / 0.4);
+    }
+
+    const w = 276;
+    const h = 52;
+    const cx = canvas.width / 2;
+    const cy = 62;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(cx, cy);
+    ctx.scale(scale, scale);
+
+    ctx.fillStyle = "rgba(9, 13, 22, 0.9)";
+    ctx.strokeStyle = b.color;
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.roundRect(-w / 2, -h / 2, w, h, 14);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#f8fafc";
+    ctx.font = "900 14px system-ui, sans-serif";
+    ctx.fillText(b.title, 0, -4);
+
+    ctx.fillStyle = b.color;
+    ctx.font = "800 13px system-ui, sans-serif";
+    ctx.fillText(b.subtitle, 0, 15);
+
+    ctx.restore();
+}
+
 function render(dt) {
     ctx.save();
     if (screenShake > 0) {
@@ -2337,6 +2427,7 @@ function render(dt) {
     drawPacman();
     drawGhosts();
     drawFloatingTexts(dt);
+    drawMilestoneBanner();
 
     if (state === "READY") {
         ctx.fillStyle = "rgba(9, 13, 22, 0.58)";

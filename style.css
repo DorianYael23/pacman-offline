@@ -88,6 +88,26 @@ body {
   white-space: nowrap;
 }
 
+.hud-box .value.hud-pop {
+  animation: hudPop 0.65s ease;
+}
+
+@keyframes hudPop {
+  0% {
+    transform: scale(1);
+    color: var(--accent);
+  }
+  35% {
+    transform: scale(1.32);
+    color: #4ade80;
+    text-shadow: 0 0 12px rgba(74, 222, 128, 0.85);
+  }
+  100% {
+    transform: scale(1);
+    color: var(--accent);
+  }
+}
+
 /* Barra compacta de Turbo, Combo y Power-Ups */
 .status-strip {
   display: flex;
