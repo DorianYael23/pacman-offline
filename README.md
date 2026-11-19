@@ -33,7 +33,7 @@ Versión moderna, **mobile-first** y **100% offline (PWA)** del clásico Pac-Man
 | **❄️ Orbe de Hielo** | Congela a todos los fantasmas activos durante `4.5s`. |
 | **🧲 Imán de Puntos** | Atrae automáticamente los puntos cercanos durante `6.5s`. |
 | **🛡️ Escudo** | Absorbe un golpe mortal, lanza una onda expansiva que asusta a los fantasmas cercanos y otorga invulnerabilidad breve. |
-| **💚 Recuperación de Vidas** | Si tienes menos de 5 vidas, pueden aparecer **corazones de vida extra** en el mapa, y además obtienes **+1 vida (1-UP)** automáticamente cada **10,000 puntos**. |
+| **💚 Recuperación de Vidas** | Empiezas con 5 vidas (máximo 6). Si pierdes vidas, se garantiza la aparición de un **corazón verde** en el mapa, y además obtienes **+1 vida (1-UP)** cada **5,000 puntos**. |
 
 ---
 

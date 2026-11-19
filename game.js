@@ -814,10 +814,11 @@ const sound = new SoundEngine();
 let grid = [];
 let score = 0;
 let highScore = Number(localStorage.getItem("pacman_offline_highscore") || 0);
-const MAX_LIVES = 5;
+const START_LIVES = 5;
+const MAX_LIVES = 6;
 let level = 1;
-let lives = MAX_LIVES;
-let nextExtraLifeScore = 10000;
+let lives = START_LIVES;
+let nextExtraLifeScore = 5000;
 let totalDotsInLevel = 1;
 let dotsRemaining = 0;
 let dotsEatenInLevel = 0;
@@ -858,6 +859,7 @@ const FRUIT_MILESTONES = [35, 85];
 
 let activePowerItem = null; // { type, x, y, timer }
 let nextItemMilestoneIdx = 0;
+let lifeSpawnedInLevel = false;
 const ITEM_MILESTONES = [22, 65, 110];
 
 let floatingTexts = [];
@@ -1148,6 +1150,7 @@ function loadLevel() {
     nextFruitMilestoneIdx = 0;
     activePowerItem = null;
     nextItemMilestoneIdx = 0;
+    lifeSpawnedInLevel = false;
     floatingTexts = [];
     particles = [];
     shockwaves = [];
@@ -1181,8 +1184,8 @@ function startNewGame() {
     sound.stopIntro();
     score = 0;
     level = 1;
-    lives = MAX_LIVES;
-    nextExtraLifeScore = 10000;
+    lives = START_LIVES;
+    nextExtraLifeScore = 5000;
     dashEnergy = 35;
     shieldActive = false;
     loadLevel();
@@ -1206,7 +1209,7 @@ function updateHUD() {
 function addScore(points, x, y, color = "#facc15") {
     score += points;
     if (score >= nextExtraLifeScore) {
-        nextExtraLifeScore += 10000;
+        nextExtraLifeScore += 5000;
         if (lives < MAX_LIVES) {
             lives++;
             sound.extraLife();
@@ -1260,18 +1263,26 @@ function spawnSpecialItem() {
     const pos = pickOpenSpawnPosition(bonusFruit);
     if (!pos) return;
 
-    const pool = ["FREEZE", "MAGNET"];
-    if (!shieldActive) pool.push("SHIELD");
-    if (lives < MAX_LIVES) pool.push("LIFE");
-    const type = pool[Math.floor(Math.random() * pool.length)];
+    let type;
+    // Si te faltan vidas, garantiza al menos un corazón de vida extra en el nivel
+    if (lives < START_LIVES && !lifeSpawnedInLevel) {
+        type = "LIFE";
+        lifeSpawnedInLevel = true;
+    } else {
+        const pool = ["FREEZE", "MAGNET"];
+        if (!shieldActive) pool.push("SHIELD");
+        if (lives < MAX_LIVES) pool.push("LIFE");
+        type = pool[Math.floor(Math.random() * pool.length)];
+        if (type === "LIFE") lifeSpawnedInLevel = true;
+    }
 
     activePowerItem = {
         type,
         x: pos.x,
         y: pos.y,
-        timer: 10.5
+        timer: type === "LIFE" ? 13 : 10.5
     };
-    spawnShockwave(pos.x, pos.y, "#38bdf8", 34);
+    spawnShockwave(pos.x, pos.y, type === "LIFE" ? "#4ade80" : "#38bdf8", 38);
 }
 
 function eatTileDot(row, col) {
