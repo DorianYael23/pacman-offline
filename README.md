@@ -7,6 +7,12 @@ Versión moderna, **mobile-first** y **100% offline (PWA)** del clásico Pac-Man
 ## ✨ Características principales
 
 - 📱 **Diseñado para móvil y PC:** interfaz adaptable (`100dvh`) sin scroll accidental, optimizada para jugar en vertical u horizontal en teléfonos y en escritorio.
+- 🕹️ **Modos de juego en un menú interactivo:**
+  - **Arcade — 🟡 Normal (Clásico Puro):** recorre los 10 niveles de forma secuencial sin poderes ni Turbo, solo puntos, frutas dulces y 1-UP cada 10,000 pts.
+  - **Arcade — ⚡ Poderes:** recorre los 10 niveles con todas las mecánicas modernas (Turbo Dash, Racha Combo, Hielo, Imán, Escudo, Corazones de Vida y frutas tóxicas).
+  - **🔥 Modo Caótico:** incluye selector de **Mapa Aleatorio** (sin repetir el recién jugado) o cualquier mapa inicial de los 10 disponibles, **muros internos destructibles**, **lluvia de poderes cada 9s**, **Bombas Destructoras** y un **5.º fantasma caótico veloz** durante 14 segundos. Al ganar cada nivel cambia automáticamente al siguiente mapa.
+- 🌈 **10 laberintos neón dinámicos (`19 × 21`):** *Clásico Neón*, *Ciber Púrpura*, *Fortaleza Esmeralda*, *Núcleo Solar*, *Espiral Carmesí*, *Abismo Cian*, *Circuito Neón*, *Arena Diamante*, *Templo Magenta* y *Núcleo Caos* — todos validados sin callejones sin salida (*dead-ends*) ni pasillos dobles (`2×2`), con paredes conectadas, cuadrícula luminosa, puerta láser y túneles señalizados.
+- 💾 **Auto-guardado tipo app nativa:** al salir de la app, cambiar de pestaña o bloquear el teléfono (`visibilitychange` / `pagehide`), la partida se pausa y guarda automáticamente en `localStorage` (`pacman_offline_savestate`). Al volver, puedes elegir **▶ CONTINUAR PARTIDA** o **↻ NUEVA PARTIDA**.
 - 🎮 **3 modos de control táctil** intercambiables en cualquier momento:
   - **Dedo (Swipe):** deslizamiento rápido con ancla rodante y soporte multitáctil para cambios de dirección instantáneos.
   - **Joystick virtual:** palanca flotante ágil con zona muerta reducida.
@@ -17,23 +23,25 @@ Versión moderna, **mobile-first** y **100% offline (PWA)** del clásico Pac-Man
   - Salida escalonada de la casa de fantasmas.
   - Personalidades clásicas: **Blinky** (perseguidor + *Cruise Elroy*), **Pinky** (embosca 4 casillas adelante), **Inky** (flanqueo por vector con Blinky) y **Clyde** (persigue de lejos y se retira si se acerca).
   - Fantasmas comidos regresan como ojos flotantes a regenerarse a la casa.
-- 🌈 **6 laberintos con estilo neón dinámico:** *Clásico Neón*, *Ciber Púrpura*, *Fortaleza Esmeralda*, *Núcleo Solar*, *Espiral Carmesí* y *Abismo Cian*, con paredes conectadas, cuadrícula luminosa, puerta láser y túneles señalizados.
 - 🔊 **Audio offline híbrido:** música de inicio en bucle hasta pulsar **JUGAR**, sirena dinámica según avance del nivel y efectos combinando MP3 locales + Web Audio API.
 - 📶 **Modo Offline (PWA):** incluye `manifest.json` y Service Worker (`sw.js`) para instalarlo en la pantalla de inicio y jugar sin internet.
 
 ---
 
-## ⚡ Mecánicas adicionales
+## ⚡ Mecánicas y Power-Ups
 
 | Mecánica | Descripción |
 | :--- | :--- |
-| **⚡ Turbo Dash** | Comer puntos carga la barra de Turbo. Al llegar al 100%, actívalo para ganar **+55% de velocidad** durante `1.45s` con estela luminosa. |
+| **⚡ Turbo Dash** | Comer puntos carga la barra de Turbo. Al llegar al 100%, actívalo para ganar **+55% de velocidad** durante `1.45s` con estela luminosa. En **Modo Caótico**, embestir muros internos con Turbo los destruye. |
 | **🔥 Racha Combo (`x1` → `x4`)** | Comer puntos de forma continua aumenta tu multiplicador de puntuación. |
 | **🍒 Frutas Clásicas** | Aparecen de forma independiente en cada nivel (a los 35 y 85 puntos) para otorgar `150 × nivel` puntos y +20% de Turbo. |
+| **☠️ Fruta Tóxica / Podrida** | En *Arcade Poderes* y *Caótico*, cada fruta tiene un **30% de probabilidad** de salir podrida (morado oscuro y verde ácido con burbujas). El Imán no la atrae; comerla resta `100 × nivel` pts, reinicia el combo a `x1` y quita `-20%` de Turbo. Con **Escudo** o **Turbo Dash** activo, la purificas y ganas **`+100` pts**. |
 | **❄️ Orbe de Hielo** | Congela a todos los fantasmas activos durante `4.5s`. |
 | **🧲 Imán de Puntos** | Atrae automáticamente los puntos cercanos durante `6.5s`. |
-| **🛡️ Escudo** | Absorbe un golpe mortal, lanza una onda expansiva que asusta a los fantasmas cercanos y otorga invulnerabilidad breve. |
-| **💚 Recuperación de Vidas** | Empiezas con 5 vidas (máximo 6). Si pierdes vidas (en modo Poderes o Caótico), se garantiza un **corazón verde** en el mapa, y en todos los modos obtienes **+1 vida (1-UP)** cada **10,000 puntos** (o `+500` bonus si ya tienes el máximo). |
+| **🛡️ Escudo** | Absorbe un golpe mortal, lanza una onda expansiva que asusta fantasmas cercanos (y en **Modo Caótico** destruye muros internos cercanos) y otorga invulnerabilidad breve. |
+| **💣 Bomba Destructora** | *(Exclusivo de Modo Caótico)* Explota al recogerla y destruye muros internos en un radio de 2 casillas (protegiendo siempre bordes exteriores y la casa de fantasmas). |
+| **👾 5.º Fantasma Caótico** | *(Exclusivo de Modo Caótico)* Fantasma neón morado (`#a855f7`) más veloz que persigue agresivamente a Pac-Man durante `14s`. |
+| **💚 Recuperación de Vidas** | Empiezas con 5 vidas (máximo 6). Si pierdes vidas (en *Poderes* o *Caótico*), se garantiza un **corazón verde** en el mapa. En todos los modos, cada **10,000 puntos** aparece un banner animado con **+1 vida (1-UP)** o **`+500` puntos bonus** si ya tienes todas las vidas. |
 
 ---
 
@@ -91,7 +99,7 @@ Una vez abierto desde un servidor HTTP/HTTPS (por ejemplo GitHub Pages, Netlify 
 - **Android (Chrome):** abre el menú (`⋮`) → **"Instalar aplicación"** o **"Agregar a pantalla principal"**.
 - **iPhone / iPad (Safari):** pulsa el botón **Compartir** → **"Agregar a inicio"**.
 
-Después de cargarlo una vez, podrás abrirlo y jugarlo **sin conexión a internet**.
+Después de cargarlo una vez, podrás abrirlo y jugarlo **sin conexión a internet** con auto-guardado automático al salir.
 
 ---
 
@@ -99,9 +107,9 @@ Después de cargarlo una vez, podrás abrirlo y jugarlo **sin conexión a intern
 
 ```text
 pacman-offline/
-├── index.html      # Estructura principal, HUD, barras y controles táctiles
+├── index.html      # Estructura principal, HUD, menú de modos y controles táctiles
 ├── style.css       # Diseño responsive mobile-first y estilos arcade
-├── game.js         # Motor del juego, mapas, IA de fantasmas, audio y controles
+├── game.js         # Motor del juego, 10 mapas, IA de fantasmas, Modo Caótico y auto-guardado
 ├── manifest.json   # Configuración PWA para instalación en móviles
 ├── sw.js           # Service Worker para caché y juego sin conexión
 ├── icon-192.png    # Ícono de la app (192x192)
