@@ -29,6 +29,7 @@ const menuBtn = document.getElementById("menu-btn");
 const startBtn = document.getElementById("start-btn");
 const statusStripEl = document.getElementById("status-strip");
 const toolbarEl = document.getElementById("toolbar");
+const gameToastEl = document.getElementById("game-toast");
 const pauseBtn = document.getElementById("pause-btn");
 const muteBtn = document.getElementById("mute-btn");
 const controlModeBtn = document.getElementById("control-mode-btn");
@@ -1643,14 +1644,28 @@ function pulseHudElement(el) {
     el.classList.add("hud-pop");
 }
 
+let toastTimerId = null;
+
 function showMilestoneBanner(title, subtitle, color) {
-    milestoneBanner = {
-        title,
-        subtitle,
-        color,
-        life: 2.3,
-        maxLife: 2.3
-    };
+    milestoneBanner = null;
+    if (!gameToastEl) return;
+    clearTimeout(toastTimerId);
+
+    gameToastEl.style.borderColor = color;
+    gameToastEl.style.boxShadow = `0 6px 20px rgba(0, 0, 0, 0.55), 0 0 14px ${color}66`;
+    gameToastEl.innerHTML = `<span>${title}</span><span class="game-toast-sub" style="color:${color}">${subtitle}</span>`;
+    gameToastEl.classList.remove("hidden");
+    void gameToastEl.offsetWidth;
+    gameToastEl.classList.add("show");
+
+    toastTimerId = setTimeout(() => {
+        gameToastEl.classList.remove("show");
+        setTimeout(() => {
+            if (!gameToastEl.classList.contains("show")) {
+                gameToastEl.classList.add("hidden");
+            }
+        }, 200);
+    }, 2200);
 }
 
 function addScore(points, x, y, color = "#facc15") {

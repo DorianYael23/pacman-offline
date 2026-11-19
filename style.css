@@ -44,6 +44,7 @@ body {
 }
 
 .arcade-wrapper {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -53,6 +54,41 @@ body {
   max-width: 472px;
   height: 100%;
   max-height: 100%;
+}
+
+/* Notificación flotante sobre el HUD (nunca tapa el laberinto) */
+.game-toast {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%) scale(0.92);
+  z-index: 30;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  max-width: calc(100% - 12px);
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: rgba(9, 13, 22, 0.94);
+  border: 1.8px solid var(--accent);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55), 0 0 14px rgba(250, 204, 21, 0.3);
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.18s ease, transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.game-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+}
+
+.game-toast-sub {
+  font-weight: 800;
 }
 
 .hud {
