@@ -713,6 +713,13 @@ class SoundEngine {
         this.sweep(880, 320, 0.2, "square", 0.08, 0.04);
     }
 
+    extraLife() {
+        const notes = [523.25, 659.25, 783.99, 1046.5, 1318.5];
+        notes.forEach((f, i) => {
+            this.sweep(f, f * 1.03, 0.11, "triangle", 0.1, i * 0.075);
+        });
+    }
+
     startPowerLoop() {
         this.stopBgSiren();
         this.stopPowerLoop();
@@ -807,8 +814,10 @@ const sound = new SoundEngine();
 let grid = [];
 let score = 0;
 let highScore = Number(localStorage.getItem("pacman_offline_highscore") || 0);
+const MAX_LIVES = 5;
 let level = 1;
-let lives = 5;
+let lives = MAX_LIVES;
+let nextExtraLifeScore = 10000;
 let totalDotsInLevel = 1;
 let dotsRemaining = 0;
 let dotsEatenInLevel = 0;
@@ -1172,7 +1181,8 @@ function startNewGame() {
     sound.stopIntro();
     score = 0;
     level = 1;
-    lives = 5;
+    lives = MAX_LIVES;
+    nextExtraLifeScore = 10000;
     dashEnergy = 35;
     shieldActive = false;
     loadLevel();
@@ -1195,6 +1205,17 @@ function updateHUD() {
 
 function addScore(points, x, y, color = "#facc15") {
     score += points;
+    if (score >= nextExtraLifeScore) {
+        nextExtraLifeScore += 10000;
+        if (lives < MAX_LIVES) {
+            lives++;
+            sound.extraLife();
+            addFloatingText("¡+1 VIDA!", pacman.x, pacman.y - 18, "#4ade80");
+            spawnShockwave(pacman.x, pacman.y, "#4ade80", 78);
+            spawnParticles(pacman.x, pacman.y, "#4ade80", 16, 115);
+            vibrateShort(22);
+        }
+    }
     updateHUD();
     if (x !== undefined && y !== undefined) {
         addFloatingText(`+${points}`, x, y, color);
@@ -1241,6 +1262,7 @@ function spawnSpecialItem() {
 
     const pool = ["FREEZE", "MAGNET"];
     if (!shieldActive) pool.push("SHIELD");
+    if (lives < MAX_LIVES) pool.push("LIFE");
     const type = pool[Math.floor(Math.random() * pool.length)];
 
     activePowerItem = {
@@ -1482,6 +1504,18 @@ function updatePacman(dt) {
                 sound.shield();
                 spawnShockwave(item.x, item.y, "#a855f7", 75);
                 spawnParticles(item.x, item.y, "#c084fc", 14, 100);
+            } else if (item.type === "LIFE") {
+                if (lives < MAX_LIVES) {
+                    lives++;
+                    updateHUD();
+                    addFloatingText("¡+1 VIDA!", item.x, item.y - 16, "#4ade80");
+                    sound.extraLife();
+                } else {
+                    addScore(300, item.x, item.y, "#4ade80");
+                    sound.fruit();
+                }
+                spawnShockwave(item.x, item.y, "#4ade80", 80);
+                spawnParticles(item.x, item.y, "#4ade80", 16, 115);
             }
             updateStatusStrip();
         }
@@ -2069,6 +2103,24 @@ function drawSpecialItem() {
         ctx.lineTo(0, 8);
         ctx.lineTo(-6, 3);
         ctx.lineTo(-7, -4);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+    } else if (type === "LIFE") {
+        ctx.fillStyle = "rgba(74, 222, 128, 0.25)";
+        ctx.beginPath();
+        ctx.arc(0, 0, 10.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#4ade80";
+        ctx.strokeStyle = "#dcfce7";
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(0, 6.5);
+        ctx.bezierCurveTo(-9, 1, -8.5, -7, -3.5, -6.5);
+        ctx.bezierCurveTo(-1, -6.2, 0, -4, 0, -3.2);
+        ctx.bezierCurveTo(0, -4, 1, -6.2, 3.5, -6.5);
+        ctx.bezierCurveTo(8.5, -7, 9, 1, 0, 6.5);
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
