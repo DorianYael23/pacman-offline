@@ -108,14 +108,20 @@ Después de cargarlo una vez, podrás abrirlo y jugarlo **sin conexión a intern
 
 ```text
 pacman-offline/
-├── index.html      # Estructura principal, HUD, menú de modos y controles táctiles
-├── style.css       # Diseño responsive mobile-first y estilos arcade
-├── game.js         # Motor del juego, 10 mapas, IA de fantasmas, Modo Caótico y auto-guardado
-├── manifest.json   # Configuración PWA para instalación en móviles
-├── sw.js           # Service Worker para caché y juego sin conexión
-├── icon-192.png    # Ícono de la app (192x192)
-├── icon-512.png    # Ícono de la app (512x512)
-└── sounds/         # Efectos de sonido locales (.mp3)
+├── index.html          # Estructura principal, HUD, menú de modos y controles táctiles
+├── style.css           # Diseño responsive mobile-first y estilos arcade
+├── js/
+│   ├── constants.js    # Constantes, direcciones, ciclos Scatter/Chase y helpers
+│   ├── maps.js         # Catálogo de 10 laberintos neón (19 × 21)
+│   ├── audio.js        # Motor de audio offline híbrido (MP3 + Web Audio API)
+│   ├── input.js        # Controles de teclado, Swipe, Joystick y Cruceta
+│   ├── renderer.js     # Renderizado Canvas 2D (laberinto, Pac-Man, fantasmas, FX)
+│   └── main.js         # Estado, lógica de juego, IA, Modo Caótico y auto-guardado
+├── manifest.json       # Configuración PWA para instalación en móviles
+├── sw.js               # Service Worker para caché y juego sin conexión
+├── icon-192.png        # Ícono de la app (192x192)
+├── icon-512.png        # Ícono de la app (512x512)
+└── sounds/             # Efectos de sonido locales (.mp3)
     ├── death.mp3
     ├── eatghost.mp3
     ├── fruit.mp3

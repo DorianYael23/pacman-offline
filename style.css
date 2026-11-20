@@ -298,8 +298,8 @@ canvas {
 .overlay {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at center, rgba(15, 23, 42, 0.88) 0%, rgba(5, 8, 17, 0.94) 100%);
-  backdrop-filter: blur(5px);
+  background: radial-gradient(circle at center, rgba(15, 23, 42, 0.72) 0%, rgba(5, 8, 17, 0.84) 100%);
+  backdrop-filter: blur(3px);
   border-radius: 12px;
   display: flex;
   flex-direction: column;
