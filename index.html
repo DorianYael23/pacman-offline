@@ -57,65 +57,36 @@
         <div id="overlay" class="overlay">
           <div class="menu-card">
             <div class="menu-header">
-              <span class="menu-badge">ARCADE OFFLINE</span>
               <h1 id="overlay-title">PAC-MAN</h1>
-              <p id="overlay-subtitle">
-                Elige tu modo y prepárate para jugar
-              </p>
+              <p id="overlay-subtitle" class="hidden"></p>
             </div>
 
             <div id="saved-banner" class="saved-banner hidden"></div>
 
             <div id="menu-config" class="menu-config">
               <div class="mode-selector" role="radiogroup" aria-label="Modo de juego">
-                <button type="button" id="mode-arcade-btn" class="mode-pill active" data-mode="ARCADE">
-                  <span class="mode-icon">🕹️</span>
-                  <span class="mode-name">Arcade</span>
-                  <span class="mode-sub">10 niveles</span>
+                <button type="button" id="mode-normal-btn" class="mode-pill" data-preset="NORMAL">
+                  <span class="mode-icon">🟡</span>
+                  <span class="mode-name">Normal</span>
                 </button>
-                <button type="button" id="mode-chaos-btn" class="mode-pill" data-mode="CHAOS">
+                <button type="button" id="mode-powers-btn" class="mode-pill active" data-preset="POWERS">
+                  <span class="mode-icon">⚡</span>
+                  <span class="mode-name">Poderes</span>
+                </button>
+                <button type="button" id="mode-chaos-btn" class="mode-pill" data-preset="CHAOS">
                   <span class="mode-icon">🔥</span>
                   <span class="mode-name">Caótico</span>
-                  <span class="mode-sub">Destrucción</span>
                 </button>
               </div>
 
-              <!-- Sub-selector para Modo Arcade: Normal vs Poderes -->
-              <div id="arcade-sub-wrap" class="submode-panel">
-                <span class="panel-label">Estilo de Arcade</span>
-                <div class="submode-selector" role="radiogroup" aria-label="Estilo de Arcade">
-                  <button type="button" id="arcade-normal-btn" class="submode-pill" data-sub="NORMAL">
-                    🟡 Normal
-                  </button>
-                  <button type="button" id="arcade-powers-btn" class="submode-pill active" data-sub="POWERS">
-                    ⚡ Poderes
-                  </button>
-                </div>
-                <p id="arcade-sub-desc" class="mode-desc">
-                  Con Turbo, Combo, Hielo, Imán, Escudo y frutas especiales
-                </p>
-              </div>
-
-              <!-- Panel de opciones para Modo Caótico -->
-              <div id="chaos-map-wrap" class="submode-panel chaos-panel hidden">
-                <div class="chaos-chips">
-                  <span class="chaos-chip">💥 Muros</span>
-                  <span class="chaos-chip">🌧️ Lluvia 9s</span>
-                  <span class="chaos-chip">👹 Titán</span>
-                  <span class="chaos-chip">👾 Caos</span>
-                </div>
-                <div class="map-picker" aria-label="Selector de laberinto">
-                  <button type="button" id="map-prev-btn" class="map-nav-btn" aria-label="Mapa anterior">◀</button>
-                  <button type="button" id="map-current-btn" class="map-current-display" title="Toca para volver a Aleatorio">
-                    <span id="map-swatch" class="map-swatch"></span>
-                    <span class="map-current-info">
-                      <span id="map-current-name" class="map-current-name">🎲 Mapa Aleatorio</span>
-                      <span id="map-current-meta" class="map-current-meta">Al azar entre 10 mapas</span>
-                    </span>
-                  </button>
-                  <button type="button" id="map-next-btn" class="map-nav-btn" aria-label="Mapa siguiente">▶</button>
-                </div>
-                <div id="map-dots" class="map-dots" role="group" aria-label="Acceso rápido a laberintos"></div>
+              <!-- Selector compacto de mapa solo para Modo Caótico -->
+              <div id="chaos-map-wrap" class="map-picker hidden" aria-label="Selector de laberinto">
+                <button type="button" id="map-prev-btn" class="map-nav-btn" aria-label="Mapa anterior">◀</button>
+                <button type="button" id="map-current-btn" class="map-current-display" title="Toca para volver a Aleatorio">
+                  <span id="map-swatch" class="map-swatch"></span>
+                  <span id="map-current-name" class="map-current-name">🎲 Aleatorio</span>
+                </button>
+                <button type="button" id="map-next-btn" class="map-nav-btn" aria-label="Mapa siguiente">▶</button>
               </div>
             </div>
 

@@ -37,20 +37,15 @@ const overlayTitleEl = document.getElementById("overlay-title");
 const overlaySubEl = document.getElementById("overlay-subtitle");
 const savedBannerEl = document.getElementById("saved-banner");
 const menuConfigEl = document.getElementById("menu-config");
-const modeArcadeBtn = document.getElementById("mode-arcade-btn");
+const modeNormalBtn = document.getElementById("mode-normal-btn");
+const modePowersBtn = document.getElementById("mode-powers-btn");
 const modeChaosBtn = document.getElementById("mode-chaos-btn");
-const arcadeSubWrap = document.getElementById("arcade-sub-wrap");
-const arcadeNormalBtn = document.getElementById("arcade-normal-btn");
-const arcadePowersBtn = document.getElementById("arcade-powers-btn");
-const arcadeSubDescEl = document.getElementById("arcade-sub-desc");
 const chaosMapWrap = document.getElementById("chaos-map-wrap");
 const mapPrevBtn = document.getElementById("map-prev-btn");
 const mapNextBtn = document.getElementById("map-next-btn");
 const mapCurrentBtn = document.getElementById("map-current-btn");
 const mapSwatchEl = document.getElementById("map-swatch");
 const mapCurrentNameEl = document.getElementById("map-current-name");
-const mapCurrentMetaEl = document.getElementById("map-current-meta");
-const mapDotsEl = document.getElementById("map-dots");
 const continueBtn = document.getElementById("continue-btn");
 const menuBtn = document.getElementById("menu-btn");
 const startBtn = document.getElementById("start-btn");
@@ -126,7 +121,7 @@ let powerItems = [];
 let nextItemMilestoneIdx = 0;
 let lifeSpawnedInLevel = false;
 
-let chaosEventTimer = 9;
+let chaosEventTimer = 14;
 let chaosGhostCooldown = 12;
 let nextChaosBossType = "TITAN";
 let autoSaveTimer = 0;
@@ -145,6 +140,7 @@ let controlMode = localStorage.getItem("pacman_offline_control") || "SWIPE";
 if (!CONTROL_MODES.includes(controlMode)) controlMode = "SWIPE";
 
 let pacman = {};
+let clonePacman = null;
 let ghosts = [];
 
 highScoreEl.textContent = highScore;
@@ -228,15 +224,13 @@ function updateMapPickerUI() {
     }
 
     if (selectedMapMode === "RANDOM") {
-        if (mapCurrentNameEl) mapCurrentNameEl.textContent = "🎲 Mapa Aleatorio";
-        if (mapCurrentMetaEl) mapCurrentMetaEl.textContent = `Al azar entre ${LEVELS.length} laberintos`;
+        if (mapCurrentNameEl) mapCurrentNameEl.textContent = "🎲 Aleatorio";
         if (mapSwatchEl) {
             mapSwatchEl.style.background = "linear-gradient(135deg, #38bdf8, #a855f7, #facc15)";
             mapSwatchEl.style.boxShadow = "0 0 9px rgba(168, 85, 247, 0.8)";
         }
     } else if (selectedMapMode === "INFINITE") {
-        if (mapCurrentNameEl) mapCurrentNameEl.textContent = "♾️ Mapas Infinitos";
-        if (mapCurrentMetaEl) mapCurrentMetaEl.textContent = "Laberintos generados + espinas";
+        if (mapCurrentNameEl) mapCurrentNameEl.textContent = "♾️ Infinitos";
         if (mapSwatchEl) {
             mapSwatchEl.style.background = "linear-gradient(135deg, #22d3ee, #f43f5e, #facc15)";
             mapSwatchEl.style.boxShadow = "0 0 10px rgba(34, 211, 238, 0.85)";
@@ -245,29 +239,12 @@ function updateMapPickerUI() {
         const idx = Number(selectedMapMode);
         const lvl = LEVELS[idx];
         const color = lvl.theme?.wallStroke || "#38bdf8";
-        if (mapCurrentNameEl) mapCurrentNameEl.textContent = lvl.name;
-        if (mapCurrentMetaEl) mapCurrentMetaEl.textContent = `Laberinto ${idx + 1} de ${LEVELS.length} • Toca para Aleatorio`;
+        const shortName = lvl.name.replace(/^Nivel\s+\d+\s*[-–—:]\s*/i, "");
+        if (mapCurrentNameEl) mapCurrentNameEl.textContent = `${idx + 1}. ${shortName}`;
         if (mapSwatchEl) {
             mapSwatchEl.style.background = color;
             mapSwatchEl.style.boxShadow = `0 0 10px ${color}`;
         }
-    }
-
-    if (mapDotsEl) {
-        const dots = mapDotsEl.querySelectorAll(".map-dot");
-        dots.forEach((dot) => {
-            const val = dot.dataset.val;
-            const isActive = val === selectedMapMode;
-            dot.classList.toggle("active", isActive);
-            if (isActive) {
-                const c = dot.dataset.color || "#a855f7";
-                dot.style.background = c;
-                dot.style.boxShadow = `0 0 8px ${c}`;
-            } else {
-                dot.style.background = "";
-                dot.style.boxShadow = "";
-            }
-        });
     }
 }
 
@@ -302,71 +279,25 @@ function setSelectedMapMode(val, previewOnCanvas = true) {
     }
 }
 
-function populateMapSelector() {
-    if (!mapDotsEl) return;
-    mapDotsEl.innerHTML = "";
-
-    const randBtn = document.createElement("button");
-    randBtn.type = "button";
-    randBtn.className = "map-dot";
-    randBtn.dataset.val = "RANDOM";
-    randBtn.dataset.color = "#c084fc";
-    randBtn.title = "Mapa Aleatorio";
-    randBtn.textContent = "🎲";
-    randBtn.addEventListener("click", () => setSelectedMapMode("RANDOM"));
-    mapDotsEl.appendChild(randBtn);
-
-    const infBtn = document.createElement("button");
-    infBtn.type = "button";
-    infBtn.className = "map-dot";
-    infBtn.dataset.val = "INFINITE";
-    infBtn.dataset.color = "#22d3ee";
-    infBtn.style.borderColor = "#22d3ee88";
-    infBtn.title = "Mapas Infinitos Generados + Espinas";
-    infBtn.textContent = "♾️";
-    infBtn.addEventListener("click", () => setSelectedMapMode("INFINITE"));
-    mapDotsEl.appendChild(infBtn);
-
-    LEVELS.forEach((lvl, idx) => {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "map-dot";
-        btn.dataset.val = String(idx);
-        const col = lvl.theme?.wallStroke || "#38bdf8";
-        btn.dataset.color = col;
-        btn.style.borderColor = `${col}66`;
-        btn.title = lvl.name;
-        btn.textContent = String(idx + 1);
-        btn.addEventListener("click", () => setSelectedMapMode(String(idx)));
-        mapDotsEl.appendChild(btn);
-    });
-
-    updateMapPickerUI();
+function syncModeButtonsUI() {
+    const activePreset = gameMode === "CHAOS" ? "CHAOS" : arcadeSubMode;
+    if (modeNormalBtn) modeNormalBtn.classList.toggle("active", activePreset === "NORMAL");
+    if (modePowersBtn) modePowersBtn.classList.toggle("active", activePreset === "POWERS");
+    if (modeChaosBtn) modeChaosBtn.classList.toggle("active", activePreset === "CHAOS");
+    if (chaosMapWrap) chaosMapWrap.classList.toggle("hidden", gameMode !== "CHAOS");
 }
 
-function applyArcadeSubMode(sub) {
-    arcadeSubMode = sub === "NORMAL" ? "NORMAL" : "POWERS";
+function applyModePreset(preset) {
+    if (preset === "CHAOS") {
+        gameMode = "CHAOS";
+    } else {
+        gameMode = "ARCADE";
+        arcadeSubMode = preset === "NORMAL" ? "NORMAL" : "POWERS";
+    }
+    localStorage.setItem("pacman_offline_gamemode", gameMode);
     localStorage.setItem("pacman_offline_arcade_sub", arcadeSubMode);
 
-    if (arcadeNormalBtn) arcadeNormalBtn.classList.toggle("active", arcadeSubMode === "NORMAL");
-    if (arcadePowersBtn) arcadePowersBtn.classList.toggle("active", arcadeSubMode === "POWERS");
-    if (arcadeSubDescEl) {
-        arcadeSubDescEl.textContent =
-            arcadeSubMode === "NORMAL"
-                ? "Experiencia clásica pura: solo puntos, frutas dulces y 1-UP cada 10,000 pts"
-                : "Con Turbo, Combo, Hielo, Imán, Escudo, Corazones y frutas tóxicas";
-    }
-    syncPowersVisibility();
-}
-
-function applyGameMode(mode) {
-    gameMode = mode === "CHAOS" ? "CHAOS" : "ARCADE";
-    localStorage.setItem("pacman_offline_gamemode", gameMode);
-
-    if (modeArcadeBtn) modeArcadeBtn.classList.toggle("active", gameMode === "ARCADE");
-    if (modeChaosBtn) modeChaosBtn.classList.toggle("active", gameMode === "CHAOS");
-    if (arcadeSubWrap) arcadeSubWrap.classList.toggle("hidden", gameMode !== "ARCADE");
-    if (chaosMapWrap) chaosMapWrap.classList.toggle("hidden", gameMode !== "CHAOS");
+    syncModeButtonsUI();
     syncPowersVisibility();
 
     if (state === "MENU") {
@@ -393,14 +324,12 @@ function pickChaosMapIndex(avoidIndex = -1) {
     return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
-populateMapSelector();
-applyArcadeSubMode(arcadeSubMode);
-applyGameMode(gameMode);
+updateMapPickerUI();
+applyModePreset(gameMode === "CHAOS" ? "CHAOS" : arcadeSubMode);
 
-if (modeArcadeBtn) modeArcadeBtn.addEventListener("click", () => applyGameMode("ARCADE"));
-if (modeChaosBtn) modeChaosBtn.addEventListener("click", () => applyGameMode("CHAOS"));
-if (arcadeNormalBtn) arcadeNormalBtn.addEventListener("click", () => applyArcadeSubMode("NORMAL"));
-if (arcadePowersBtn) arcadePowersBtn.addEventListener("click", () => applyArcadeSubMode("POWERS"));
+if (modeNormalBtn) modeNormalBtn.addEventListener("click", () => applyModePreset("NORMAL"));
+if (modePowersBtn) modePowersBtn.addEventListener("click", () => applyModePreset("POWERS"));
+if (modeChaosBtn) modeChaosBtn.addEventListener("click", () => applyModePreset("CHAOS"));
 if (mapPrevBtn) {
     mapPrevBtn.addEventListener("click", () => {
         const idx = MAP_OPTIONS.indexOf(selectedMapMode);
@@ -539,6 +468,9 @@ function updateStatusStrip() {
     if (shieldActive) pills += `<span class="power-pill shield">🛡️</span>`;
     if (freezeTimer > 0) pills += `<span class="power-pill">❄️ ${Math.ceil(freezeTimer)}s</span>`;
     if (magnetTimer > 0) pills += `<span class="power-pill magnet">🧲 ${Math.ceil(magnetTimer)}s</span>`;
+    if (clonePacman && clonePacman.timer > 0) {
+        pills += `<span class="power-pill clone">🤖 ${Math.ceil(clonePacman.timer)}s</span>`;
+    }
 
     const eliteGhost = ghosts.find((g) => g.isChaosGhost || g.isTitanGhost);
     if (eliteGhost && eliteGhost.chaosTimer > 0) {
@@ -681,6 +613,7 @@ function resetPositions(isNewLevel = false) {
     invulnTimer = 0;
     dashTimer = 0;
     dashTrail = [];
+    clonePacman = null;
     ghostCombo = 0;
 
     if (isNewLevel) {
@@ -707,7 +640,7 @@ function loadLevel() {
     powerItems = [];
     nextItemMilestoneIdx = 0;
     lifeSpawnedInLevel = false;
-    chaosEventTimer = 9;
+    chaosEventTimer = 14;
     chaosGhostCooldown = 12;
     floatingTexts = [];
     particles = [];
@@ -859,7 +792,7 @@ function spawnBonusFruit() {
 
 function spawnSpecialItem(isChaosRain = false) {
     if (!isPowersEnabled()) return;
-    const maxItems = gameMode === "CHAOS" ? 3 : 1;
+    const maxItems = gameMode === "CHAOS" ? 2 : 1;
     if (powerItems.length >= maxItems) return;
 
     const avoid = bonusFruit ? [bonusFruit, ...powerItems] : [...powerItems];
@@ -879,6 +812,7 @@ function spawnSpecialItem(isChaosRain = false) {
     } else {
         const pool = ["FREEZE", "MAGNET"];
         if (!shieldActive) pool.push("SHIELD");
+        if (!clonePacman && !powerItems.some((it) => it.type === "CLONE")) pool.push("CLONE");
         if (gameMode === "CHAOS") pool.push("BOMB");
         type = pool[Math.floor(Math.random() * pool.length)];
     }
@@ -890,7 +824,13 @@ function spawnSpecialItem(isChaosRain = false) {
         timer: type === "LIFE" ? 13 : 10.5
     });
     const waveColor =
-        type === "LIFE" ? "#4ade80" : type === "BOMB" ? "#f97316" : "#38bdf8";
+        type === "LIFE"
+            ? "#4ade80"
+            : type === "BOMB"
+                ? "#f97316"
+                : type === "CLONE"
+                    ? "#67e8f9"
+                    : "#38bdf8";
     spawnShockwave(pos.x, pos.y, waveColor, 38);
 }
 
@@ -1313,8 +1253,170 @@ function updatePacman(dt) {
                 spawnShockwave(item.x, item.y, "#f97316", 105);
                 spawnShockwave(item.x, item.y, "#facc15", 65);
                 spawnParticles(item.x, item.y, "#f97316", 24, 150);
+            } else if (item.type === "CLONE") {
+                spawnClonePacman(item.x, item.y);
+                addScore(100, item.x, item.y, "#67e8f9");
             }
             updateStatusStrip();
+        }
+    }
+}
+
+function spawnClonePacman(x, y) {
+    const t = posToTile(x, y);
+    const center = tileCenter(t.col, t.row);
+    const startDir =
+        [DIRS.LEFT, DIRS.RIGHT, DIRS.UP, DIRS.DOWN].find(
+            (d) => canMove(t.col, t.row, d, false) && grid[t.row + d.y]?.[(t.col + d.x + COLS) % COLS] !== 5
+        ) || DIRS.RIGHT;
+
+    clonePacman = {
+        x: center.x,
+        y: center.y,
+        dir: startDir,
+        facingDir: startDir,
+        speed: pacman.speed * 1.06,
+        mouth: 0,
+        timer: 10,
+        lastTileKey: ""
+    };
+
+    sound.cloneSpawn();
+    spawnShockwave(center.x, center.y, "#38bdf8", 75);
+    spawnParticles(center.x, center.y, "#67e8f9", 18, 120);
+    addFloatingText("🤖 ¡CLON!", center.x, center.y - 16, "#67e8f9");
+    showMilestoneBanner("🤖 ¡CLON HOLOGRÁFICO!", "Atrae fantasmas y come puntos (10s)", "#38bdf8");
+    updateStatusStrip();
+}
+
+function chooseCloneDirection(col, row) {
+    const candidates = [DIRS.UP, DIRS.LEFT, DIRS.DOWN, DIRS.RIGHT];
+    const valid = candidates.filter((d) => {
+        if (!canMove(col, row, d, false)) return false;
+        const nc = (col + d.x + COLS) % COLS;
+        const nr = row + d.y;
+        return grid[nr]?.[nc] !== 5; // Esquiva espinas
+    });
+
+    if (valid.length === 0) return DIRS.NONE;
+
+    let options = valid.filter((d) => !(d.x === -clonePacman.dir.x && d.y === -clonePacman.dir.y));
+    if (options.length === 0) options = valid;
+
+    let bestDir = options[0];
+    let bestScore = -Infinity;
+
+    for (const d of options) {
+        const nc = (col + d.x + COLS) % COLS;
+        const nr = row + d.y;
+        let s = Math.random() * 1.5;
+
+        // Priorizar comer puntos y super puntos
+        const cell = grid[nr]?.[nc];
+        if (cell === 0) s += 14;
+        else if (cell === 3) s += 18;
+
+        // Evaluar fantasmas cercanos
+        for (const g of ghosts) {
+            if (g.state === "IN_HOUSE" || g.state === "EXITING" || g.state === "EATEN") continue;
+            const gt = posToTile(g.x, g.y);
+            const dist = Math.hypot(nc - gt.col, nr - gt.row);
+            if (g.state === "FRIGHTENED") {
+                if (dist < 6) s += (6 - dist) * 5;
+            } else {
+                if (dist < 4.5) s -= (4.5 - dist) * 16;
+            }
+        }
+
+        if (s > bestScore) {
+            bestScore = s;
+            bestDir = d;
+        }
+    }
+    return bestDir;
+}
+
+function updateClonePacman(dt) {
+    if (!clonePacman) return;
+
+    const prevSec = Math.ceil(clonePacman.timer);
+    clonePacman.timer -= dt;
+    if (Math.ceil(clonePacman.timer) !== prevSec) updateStatusStrip();
+
+    if (clonePacman.timer <= 0) {
+        sound.cloneVanish();
+        spawnParticles(clonePacman.x, clonePacman.y, "#67e8f9", 16, 110);
+        spawnShockwave(clonePacman.x, clonePacman.y, "#38bdf8", 42);
+        clonePacman = null;
+        updateStatusStrip();
+        return;
+    }
+
+    const step = clonePacman.speed * dt;
+    const { col, row } = posToTile(clonePacman.x, clonePacman.y);
+    const center = tileCenter(col, row);
+    const tileKey = `${col},${row}`;
+
+    if (clonePacman.dir.x !== 0) clonePacman.y = center.y;
+    if (clonePacman.dir.y !== 0) clonePacman.x = center.x;
+
+    const dist = Math.hypot(clonePacman.x - center.x, clonePacman.y - center.y);
+    if (
+        (dist <= step + 1.5 && clonePacman.lastTileKey !== tileKey) ||
+        (!canMove(col, row, clonePacman.dir, false) && dist <= step + 1.5)
+    ) {
+        clonePacman.x = center.x;
+        clonePacman.y = center.y;
+        clonePacman.dir = chooseCloneDirection(col, row);
+        clonePacman.lastTileKey = tileKey;
+    }
+
+    if (clonePacman.dir !== DIRS.NONE) {
+        clonePacman.facingDir = clonePacman.dir;
+        clonePacman.x += clonePacman.dir.x * step;
+        clonePacman.y += clonePacman.dir.y * step;
+        clonePacman.mouth += dt * 16;
+    }
+
+    if (clonePacman.x < 0) clonePacman.x += COLS * TILE;
+    if (clonePacman.x >= COLS * TILE) clonePacman.x -= COLS * TILE;
+
+    // El Clon come puntos para el jugador
+    const cur = posToTile(clonePacman.x, clonePacman.y);
+    eatTileDot(cur.row, cur.col);
+    if (state !== "PLAYING") return;
+
+    // Colisión del Clon con fantasmas
+    for (let i = ghosts.length - 1; i >= 0; i--) {
+        const g = ghosts[i];
+        if (g.state === "EATEN" || g.state === "IN_HOUSE" || g.state === "EXITING") continue;
+        const hitDist = g.isTitanGhost ? TILE * 0.82 : TILE * 0.66;
+        if (Math.hypot(g.x - clonePacman.x, g.y - clonePacman.y) < hitDist) {
+            if (g.state === "FRIGHTENED") {
+                ghostCombo++;
+                const basePts = 200 * Math.pow(2, ghostCombo - 1);
+                const pts = g.isTitanGhost ? Math.max(600, basePts) : basePts;
+                addScore(pts, g.x, g.y, "#67e8f9");
+                sound.eatGhost();
+                spawnParticles(g.x, g.y, "#67e8f9", 16, 125);
+                spawnShockwave(g.x, g.y, "#38bdf8", 46);
+                if (g.isChaosGhost || g.isTitanGhost) {
+                    ghosts.splice(i, 1);
+                    updateStatusStrip();
+                } else {
+                    g.state = "EATEN";
+                    g.lastTileKey = "";
+                }
+            } else {
+                // El fantasma atrapa al Clon señuelo (sin quitar vida al jugador)
+                sound.cloneVanish();
+                spawnParticles(clonePacman.x, clonePacman.y, "#67e8f9", 22, 135);
+                spawnShockwave(clonePacman.x, clonePacman.y, "#38bdf8", 55);
+                addFloatingText("🤖 ¡SEÑUELO!", clonePacman.x, clonePacman.y - 12, "#67e8f9");
+                clonePacman = null;
+                updateStatusStrip();
+                return;
+            }
         }
     }
 }
@@ -1329,7 +1431,9 @@ function getGhostTargetTile(ghost) {
         return { col: cfg.ghostGate.col, row: cfg.ghostGate.row };
     }
 
-    const pTile = posToTile(pacman.x, pacman.y);
+    // Si el Clon Holográfico está activo, atrae como señuelo a todos los fantasmas perseguidores
+    const targetActor = clonePacman || pacman;
+    const pTile = posToTile(targetActor.x, targetActor.y);
 
     if (ghost.isChaosGhost || ghost.isTitanGhost) {
         return { col: pTile.col, row: pTile.row };
@@ -1338,11 +1442,11 @@ function getGhostTargetTile(ghost) {
     const isCruiseElroy =
         ghost.type === "chaser" && dotsRemaining <= Math.max(12, Math.floor(totalDotsInLevel * 0.14));
 
-    if (globalGhostMode === "SCATTER" && !isCruiseElroy) {
+    if (globalGhostMode === "SCATTER" && !isCruiseElroy && !clonePacman) {
         return SCATTER_CORNERS[ghost.type] || SCATTER_CORNERS.chaser;
     }
 
-    const pFace = pacman.facingDir || DIRS.RIGHT;
+    const pFace = targetActor.facingDir || DIRS.RIGHT;
 
     if (ghost.type === "chaser") {
         return { col: pTile.col, row: pTile.row };
@@ -1688,7 +1792,7 @@ function updateTimersAndEffects(dt) {
     if (state === "PLAYING" && gameMode === "CHAOS") {
         chaosEventTimer -= dt;
         if (chaosEventTimer <= 0) {
-            chaosEventTimer = 9;
+            chaosEventTimer = 14;
             spawnSpecialItem(true);
         }
 
@@ -1834,7 +1938,18 @@ function saveGameState() {
             nextChaosBossType
         },
         bonusFruit: bonusFruit ? { ...bonusFruit } : null,
-        powerItems: powerItems.map((it) => ({ ...it }))
+        powerItems: powerItems.map((it) => ({ ...it })),
+        clonePacman: clonePacman
+            ? {
+                x: clonePacman.x,
+                y: clonePacman.y,
+                dir: dirToKey(clonePacman.dir),
+                facingDir: dirToKey(clonePacman.facingDir),
+                speed: clonePacman.speed,
+                mouth: clonePacman.mouth,
+                timer: clonePacman.timer
+            }
+            : null
     };
 
     try {
@@ -1877,8 +1992,8 @@ function restoreSavedGame() {
     gameMode = data.mode === "CHAOS" ? "CHAOS" : "ARCADE";
     arcadeSubMode = data.arcadeSubMode === "NORMAL" ? "NORMAL" : "POWERS";
     selectedMapMode = data.selectedMapMode || "RANDOM";
-    applyArcadeSubMode(arcadeSubMode);
-    applyGameMode(gameMode);
+    syncModeButtonsUI();
+    syncPowersVisibility();
     updateMapPickerUI();
 
     currentLevelIndex = Math.max(0, Math.min(LEVELS.length - 1, Number(data.currentLevelIndex) || 0));
@@ -1954,12 +2069,24 @@ function restoreSavedGame() {
     magnetTimer = Math.max(0, Number(data.powers?.magnetTimer) || 0);
     shieldActive = !!data.powers?.shieldActive;
     invulnTimer = Math.max(0, Number(data.powers?.invulnTimer) || 0);
-    chaosEventTimer = Math.max(0.5, Number(data.powers?.chaosEventTimer) || 9);
+    chaosEventTimer = Math.max(0.5, Number(data.powers?.chaosEventTimer) || 14);
     chaosGhostCooldown = Math.max(1, Number(data.powers?.chaosGhostCooldown) || 12);
     nextChaosBossType = data.powers?.nextChaosBossType === "CHAOS" ? "CHAOS" : "TITAN";
 
     bonusFruit = data.bonusFruit ? { ...data.bonusFruit } : null;
     powerItems = Array.isArray(data.powerItems) ? data.powerItems.map((it) => ({ ...it })) : [];
+    clonePacman = data.clonePacman
+        ? {
+            x: Number(data.clonePacman.x),
+            y: Number(data.clonePacman.y),
+            dir: keyToDir(data.clonePacman.dir),
+            facingDir: keyToDir(data.clonePacman.facingDir) || DIRS.RIGHT,
+            speed: Number(data.clonePacman.speed) || pacman.speed,
+            mouth: Number(data.clonePacman.mouth) || 0,
+            timer: Math.max(0.5, Number(data.clonePacman.timer) || 5),
+            lastTileKey: ""
+        }
+        : null;
 
     floatingTexts = [];
     particles = [];
@@ -2011,6 +2138,8 @@ function goToMainMenu() {
 function refreshMenuOverlay() {
     const saved = readSavedGame();
     overlayTitleEl.textContent = "PAC-MAN";
+    overlaySubEl.textContent = "";
+    overlaySubEl.classList.add("hidden");
     if (menuConfigEl) menuConfigEl.classList.remove("hidden");
     if (menuBtn) menuBtn.classList.add("hidden");
 
@@ -2019,9 +2148,8 @@ function refreshMenuOverlay() {
             saved.mode === "CHAOS"
                 ? "Caótico"
                 : saved.arcadeSubMode === "NORMAL"
-                    ? "Arcade Normal"
-                    : "Arcade Poderes";
-        overlaySubEl.textContent = "Tienes una partida en curso lista para continuar";
+                    ? "Normal"
+                    : "Poderes";
         if (savedBannerEl) {
             savedBannerEl.textContent = `💾 Nivel ${saved.level} • ${saved.score} pts • ${modeTag}`;
             savedBannerEl.classList.remove("hidden");
@@ -2034,7 +2162,6 @@ function refreshMenuOverlay() {
         startBtn.classList.remove("btn-primary");
         startBtn.classList.add("btn-secondary");
     } else {
-        overlaySubEl.textContent = "Elige tu modo y prepárate para jugar";
         if (savedBannerEl) savedBannerEl.classList.add("hidden");
         if (continueBtn) continueBtn.classList.add("hidden");
         startBtn.textContent = "▶ JUGAR";
@@ -2051,7 +2178,8 @@ function pauseForBackground() {
         pauseBtn.classList.add("is-paused");
         pauseLabelEl.textContent = "Pausado";
         overlayTitleEl.textContent = "PAUSA";
-        overlaySubEl.textContent = "Partida guardada • Pulsa Continuar para seguir";
+        overlaySubEl.textContent = "Partida guardada";
+        overlaySubEl.classList.remove("hidden");
         if (savedBannerEl) savedBannerEl.classList.add("hidden");
         if (menuConfigEl) menuConfigEl.classList.add("hidden");
         if (continueBtn) {
@@ -2087,7 +2215,8 @@ function togglePause() {
         pauseBtn.classList.add("is-paused");
         pauseLabelEl.textContent = "Pausado";
         overlayTitleEl.textContent = "PAUSA";
-        overlaySubEl.textContent = "Presiona P o Continuar para seguir";
+        overlaySubEl.textContent = "Presiona P o Continuar";
+        overlaySubEl.classList.remove("hidden");
         if (savedBannerEl) savedBannerEl.classList.add("hidden");
         if (menuConfigEl) menuConfigEl.classList.add("hidden");
         if (continueBtn) {
@@ -2170,6 +2299,9 @@ function gameLoop(timestamp) {
         updateTimersAndEffects(dt);
         updatePacman(dt);
         if (state === "PLAYING") {
+            updateClonePacman(dt);
+        }
+        if (state === "PLAYING") {
             updateGhosts(dt);
         }
     } else if (state === "DYING") {
@@ -2180,7 +2312,8 @@ function gameLoop(timestamp) {
                 state = "GAME_OVER";
                 clearSavedGame();
                 overlayTitleEl.textContent = "GAME OVER";
-                overlaySubEl.textContent = `Puntuación final: ${score} pts • Nivel alcanzado: ${level}`;
+                overlaySubEl.textContent = `Puntuación final: ${score} pts • Nivel ${level}`;
+                overlaySubEl.classList.remove("hidden");
                 if (savedBannerEl) savedBannerEl.classList.add("hidden");
                 if (menuConfigEl) menuConfigEl.classList.remove("hidden");
                 if (continueBtn) continueBtn.classList.add("hidden");
@@ -2238,6 +2371,7 @@ function gameLoop(timestamp) {
         particles,
         shockwaves,
         pacman,
+        clonePacman,
         dashTrail,
         dashTimer,
         invulnTimer,

@@ -479,4 +479,13 @@ export class SoundEngine {
         this.sweep(320, 960, 0.14, "sawtooth", 0.09, 0);
         this.sweep(960, 480, 0.18, "sawtooth", 0.09, 0.12);
     }
+
+    cloneSpawn() {
+        this.sweep(440, 880, 0.11, "triangle", 0.09, 0);
+        this.sweep(660, 1320, 0.14, "sine", 0.09, 0.08);
+    }
+
+    cloneVanish() {
+        this.sweep(720, 220, 0.18, "sine", 0.08, 0);
+    }
 }

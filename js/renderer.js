@@ -328,10 +328,68 @@ function drawSpecialItems(ctx, powerItems, animTick) {
             ctx.beginPath();
             ctx.arc(7.5, -7.5, sparkR, 0, Math.PI * 2);
             ctx.fill();
+        } else if (type === "CLONE") {
+            // Píldora Pac-Man (invoca Clon Holográfico)
+            ctx.fillStyle = "rgba(56, 189, 248, 0.25)";
+            ctx.beginPath();
+            ctx.arc(0, 0, 10.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = "#38bdf8";
+            ctx.lineWidth = 1.6;
+            ctx.beginPath();
+            ctx.arc(0, 0, 8.8, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.fillStyle = "#fde047";
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.arc(0, 0, 6.2, 0.22 * Math.PI, 1.78 * Math.PI);
+            ctx.closePath();
+            ctx.fill();
         }
 
         ctx.restore();
     }
+}
+
+function drawClonePacman(ctx, clonePacman, animTick) {
+    if (!clonePacman) return;
+    if (clonePacman.timer < 2.2 && Math.floor(clonePacman.timer * 7) % 2 === 0) return;
+
+    const pulse = TILE * (0.56 + Math.sin(animTick * 12) * 0.05);
+    ctx.save();
+    ctx.translate(clonePacman.x, clonePacman.y);
+
+    // Anillo holográfico
+    ctx.strokeStyle = "rgba(56, 189, 248, 0.85)";
+    ctx.fillStyle = "rgba(56, 189, 248, 0.16)";
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.arc(0, 0, pulse, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    const angleOffset = Math.abs(Math.sin(clonePacman.mouth)) * 0.28 * Math.PI;
+    const face = clonePacman.facingDir || DIRS.RIGHT;
+    let rotation = 0;
+    if (face === DIRS.DOWN) rotation = Math.PI / 2;
+    else if (face === DIRS.LEFT) rotation = Math.PI;
+    else if (face === DIRS.UP) rotation = -Math.PI / 2;
+
+    ctx.rotate(rotation);
+    ctx.globalAlpha = 0.85;
+    ctx.fillStyle = "#67e8f9";
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, TILE * 0.4, angleOffset, Math.PI * 2 - angleOffset);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = "#fef08a";
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+    ctx.restore();
 }
 
 function drawPacman(ctx, stateObj) {
@@ -577,6 +635,7 @@ export function renderGame(ctx, canvas, dt, stateObj) {
     drawBonusFruit(ctx, stateObj.bonusFruit, stateObj.animTick);
     drawSpecialItems(ctx, stateObj.powerItems, stateObj.animTick);
     drawParticlesAndWaves(ctx, stateObj.particles, stateObj.shockwaves);
+    drawClonePacman(ctx, stateObj.clonePacman, stateObj.animTick);
     drawPacman(ctx, stateObj);
     drawGhosts(ctx, stateObj);
     drawFloatingTexts(ctx, stateObj.floatingTexts, dt);

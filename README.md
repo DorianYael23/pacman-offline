@@ -10,7 +10,7 @@ Versión moderna, **mobile-first** y **100% offline (PWA)** del clásico Pac-Man
 - 🕹️ **Modos de juego en un menú interactivo:**
   - **Arcade — 🟡 Normal (Clásico Puro):** recorre los 10 niveles de forma secuencial sin poderes ni Turbo, solo puntos, frutas dulces y 1-UP cada 10,000 pts.
   - **Arcade — ⚡ Poderes:** recorre los 10 niveles con todas las mecánicas modernas (Turbo Dash, Racha Combo, Hielo, Imán, Escudo, Corazones de Vida y frutas tóxicas).
-  - **🔥 Modo Caótico:** incluye selector de **Mapa Aleatorio** (sin repetir el recién jugado) o cualquier mapa inicial de los 10 disponibles, **muros internos destructibles**, **lluvia de poderes cada 9s**, **Bombas Destructoras** y un **5.º fantasma caótico veloz** durante 14 segundos. Al ganar cada nivel cambia automáticamente al siguiente mapa.
+  - **🔥 Modo Caótico:** incluye selector de **Mapa Aleatorio** (sin repetir el recién jugado) o cualquier mapa inicial de los 10 disponibles, **muros internos destructibles**, **lluvia de poderes cada 14s**, **Bombas Destructoras** y un **5.º fantasma caótico veloz** durante 14 segundos. Al ganar cada nivel cambia automáticamente al siguiente mapa.
 - 🌈 **10 laberintos neón dinámicos (`19 × 21`):** *Clásico Neón*, *Ciber Púrpura*, *Fortaleza Esmeralda*, *Núcleo Solar*, *Espiral Carmesí*, *Abismo Cian*, *Circuito Neón*, *Arena Diamante*, *Templo Magenta* y *Núcleo Caos* — todos validados sin callejones sin salida (*dead-ends*) ni pasillos dobles (`2×2`), con paredes conectadas, cuadrícula luminosa, puerta láser y túneles señalizados.
 - 💾 **Auto-guardado tipo app nativa:** al salir de la app, cambiar de pestaña o bloquear el teléfono (`visibilitychange` / `pagehide`), la partida se pausa y guarda automáticamente en `localStorage` (`pacman_offline_savestate`). Al volver, puedes elegir **▶ CONTINUAR PARTIDA** o **↻ NUEVA PARTIDA**.
 - 🎮 **3 modos de control táctil** intercambiables en cualquier momento:
@@ -39,6 +39,7 @@ Versión moderna, **mobile-first** y **100% offline (PWA)** del clásico Pac-Man
 | **❄️ Orbe de Hielo** | Congela a todos los fantasmas activos durante `4.5s`. |
 | **🧲 Imán de Puntos** | Atrae automáticamente los puntos cercanos durante `6.5s`. |
 | **🛡️ Escudo** | Absorbe un golpe mortal, lanza una onda expansiva que asusta fantasmas cercanos (y en **Modo Caótico** destruye muros internos cercanos) y otorga invulnerabilidad breve. |
+| **🤖 Clon Holográfico (Píldora Pac-Man)** | *(Arcade Poderes y Modo Caótico)* Invoca un segundo Pac-Man con IA propia durante `10s`: come puntos por ti, esquiva espinas, se come fantasmas asustados y sirve de **señuelo** atrayendo a todos los fantasmas hacia él sin quitarte vidas si lo atrapan. |
 | **💣 Bomba Destructora** | *(Exclusivo de Modo Caótico)* Explota al recogerla y destruye muros internos en un radio de 2 casillas (protegiendo siempre bordes exteriores y la casa de fantasmas). |
 | **👾 5.º Fantasma Caótico** | *(Exclusivo de Modo Caótico)* Fantasma neón morado (`#a855f7`) más veloz que persigue agresivamente a Pac-Man durante `14s`. |
 | **👹 Titán Destructor** | *(Exclusivo de Modo Caótico)* Fantasma gigante (`1.45×`) con aura de fuego que aparece durante `16s` y **atraviesa y destruye muros internos** en su camino hacia Pac-Man (comérselo asustado da mínimo `+600` pts). |
