@@ -1091,7 +1091,8 @@ const ITEM_MILESTONES = [22, 65, 110];
 
 // Temporizadores exclusivos del Modo Caótico y auto-guardado
 let chaosEventTimer = 9;
-let chaosGhostCooldown = 14;
+let chaosGhostCooldown = 12;
+let nextChaosBossType = "TITAN"; // Alterna entre TITAN (gigante rompemuros) y CHAOS (veloz)
 let autoSaveTimer = 0;
 
 let floatingTexts = [];
@@ -1458,9 +1459,13 @@ function updateStatusStrip() {
     if (magnetTimer > 0) {
         pills += `<span class="power-pill magnet">🧲 ${Math.ceil(magnetTimer)}s</span>`;
     }
-    const chaosGhost = ghosts.find((g) => g.isChaosGhost);
-    if (chaosGhost && chaosGhost.chaosTimer > 0) {
-        pills += `<span class="power-pill chaos">👾 ${Math.ceil(chaosGhost.chaosTimer)}s</span>`;
+    const eliteGhost = ghosts.find((g) => g.isChaosGhost || g.isTitanGhost);
+    if (eliteGhost && eliteGhost.chaosTimer > 0) {
+        if (eliteGhost.isTitanGhost) {
+            pills += `<span class="power-pill titan">👹 ${Math.ceil(eliteGhost.chaosTimer)}s</span>`;
+        } else {
+            pills += `<span class="power-pill chaos">👾 ${Math.ceil(eliteGhost.chaosTimer)}s</span>`;
+        }
     }
     powerBadgesEl.innerHTML = pills;
 }
@@ -1565,7 +1570,7 @@ function loadLevel() {
     nextItemMilestoneIdx = 0;
     lifeSpawnedInLevel = false;
     chaosEventTimer = 9;
-    chaosGhostCooldown = 14;
+    chaosGhostCooldown = 12;
     floatingTexts = [];
     particles = [];
     shockwaves = [];
@@ -1791,16 +1796,20 @@ function spawnSpecialItem(isChaosRain = false) {
     if (!pos) return;
 
     let type;
-    if (!isChaosRain && lives < START_LIVES && !lifeSpawnedInLevel) {
+    const canSpawnLife =
+        lives < START_LIVES &&
+        !lifeSpawnedInLevel &&
+        !powerItems.some((it) => it.type === "LIFE");
+    const lifeChance = lives <= 2 ? 0.35 : 0.15;
+
+    if (canSpawnLife && Math.random() < lifeChance) {
         type = "LIFE";
         lifeSpawnedInLevel = true;
     } else {
         const pool = ["FREEZE", "MAGNET"];
         if (!shieldActive) pool.push("SHIELD");
-        if (lives < MAX_LIVES) pool.push("LIFE");
         if (gameMode === "CHAOS") pool.push("BOMB");
         type = pool[Math.floor(Math.random() * pool.length)];
-        if (type === "LIFE") lifeSpawnedInLevel = true;
     }
 
     powerItems.push({
@@ -1815,7 +1824,7 @@ function spawnSpecialItem(isChaosRain = false) {
 }
 
 function spawnChaosGhost() {
-    if (ghosts.some((g) => g.isChaosGhost)) return;
+    if (ghosts.some((g) => g.isChaosGhost || g.isTitanGhost)) return;
     const cfg = getLevelConfig();
     const spawnPos = tileCenter(cfg.ghostGate.col, cfg.ghostGate.row - 1);
     const baseGhostSpeed = 92 + Math.min(level - 1, 6) * 5.5;
@@ -1836,6 +1845,7 @@ function spawnChaosGhost() {
         reversePending: false,
         recoveredFromPower: false,
         isChaosGhost: true,
+        isTitanGhost: false,
         chaosTimer: 14,
         lastTileKey: "",
         bobPhase: 0
@@ -1844,7 +1854,43 @@ function spawnChaosGhost() {
     sound.chaosGhost();
     spawnShockwave(spawnPos.x, spawnPos.y, "#a855f7", 75);
     spawnParticles(spawnPos.x, spawnPos.y, "#c084fc", 18, 120);
-    showMilestoneBanner("👾 ¡FANTASMA CAÓTICO!", "5.º fantasma veloz por 14s", "#c084fc");
+    showMilestoneBanner("👾 ¡FANTASMA CAÓTICO!", "Veloz por 14s", "#c084fc");
+    updateStatusStrip();
+}
+
+function spawnTitanGhost() {
+    if (ghosts.some((g) => g.isChaosGhost || g.isTitanGhost)) return;
+    const cfg = getLevelConfig();
+    const spawnPos = tileCenter(cfg.ghostGate.col, cfg.ghostGate.row - 1);
+    const baseGhostSpeed = 92 + Math.min(level - 1, 6) * 5.5;
+
+    ghosts.push({
+        x: spawnPos.x,
+        y: spawnPos.y,
+        dir: DIRS.LEFT,
+        color: "#f97316",
+        type: "titan",
+        name: "Titán",
+        speed: baseGhostSpeed * 0.84,
+        state: frightenedTimer > 0 ? "FRIGHTENED" : "NORMAL",
+        homeX: spawnPos.x,
+        homeY: spawnPos.y,
+        releaseDots: 0,
+        releaseTime: 0,
+        reversePending: false,
+        recoveredFromPower: false,
+        isChaosGhost: false,
+        isTitanGhost: true,
+        chaosTimer: 16,
+        lastTileKey: "",
+        bobPhase: 0
+    });
+
+    sound.bomb();
+    screenShake = 0.22;
+    spawnShockwave(spawnPos.x, spawnPos.y, "#f97316", 90);
+    spawnParticles(spawnPos.x, spawnPos.y, "#fb923c", 22, 130);
+    showMilestoneBanner("👹 ¡TITÁN DESTRUCTOR!", "Rompe muros por 16s", "#fb923c");
     updateStatusStrip();
 }
 
@@ -2166,8 +2212,8 @@ function getGhostTargetTile(ghost) {
 
     const pTile = posToTile(pacman.x, pacman.y);
 
-    // El 5.º fantasma caótico persigue agresivamente a Pac-Man sin importar Scatter
-    if (ghost.isChaosGhost) {
+    // Los fantasmas élite del Modo Caótico (Caos y Titán) persiguen directo a Pac-Man
+    if (ghost.isChaosGhost || ghost.isTitanGhost) {
         return { col: pTile.col, row: pTile.row };
     }
 
@@ -2217,9 +2263,19 @@ function getGhostTargetTile(ghost) {
     return SCATTER_CORNERS.clyde;
 }
 
-function chooseGhostDirection(ghost, col, row) {
+function canGhostStep(col, row, dir, ghost) {
     const allowGate = ghost.state === "EATEN";
+    if (canMove(col, row, dir, allowGate)) return true;
+    // El Titán Destructor puede abrirse paso rompiendo muros internos mientras persigue
+    if (ghost.isTitanGhost && ghost.state === "NORMAL" && dir && (dir.x !== 0 || dir.y !== 0)) {
+        const nc = col + dir.x;
+        const nr = row + dir.y;
+        if (isDestructibleWall(nc, nr)) return true;
+    }
+    return false;
+}
 
+function chooseGhostDirection(ghost, col, row) {
     // Orden oficial de desempate del arcade original: UP > LEFT > DOWN > RIGHT
     const candidates = [DIRS.UP, DIRS.LEFT, DIRS.DOWN, DIRS.RIGHT];
 
@@ -2227,19 +2283,19 @@ function chooseGhostDirection(ghost, col, row) {
     if (ghost.reversePending) {
         ghost.reversePending = false;
         const rev = { x: -ghost.dir.x, y: -ghost.dir.y };
-        if (canMove(col, row, rev, allowGate)) {
+        if (canGhostStep(col, row, rev, ghost)) {
             return rev;
         }
     }
 
     const options = candidates.filter((d) => {
         if (d.x === -ghost.dir.x && d.y === -ghost.dir.y) return false;
-        return canMove(col, row, d, allowGate);
+        return canGhostStep(col, row, d, ghost);
     });
 
     if (options.length === 0) {
         const rev = { x: -ghost.dir.x, y: -ghost.dir.y };
-        return canMove(col, row, rev, allowGate) ? rev : DIRS.NONE;
+        return canGhostStep(col, row, rev, ghost) ? rev : DIRS.NONE;
     }
 
     if (options.length === 1) {
@@ -2304,16 +2360,17 @@ function updateGhosts(dt) {
     for (let gi = ghosts.length - 1; gi >= 0; gi--) {
         const ghost = ghosts[gi];
 
-        // Temporizador del 5.º fantasma caótico (14 segundos)
-        if (ghost.isChaosGhost) {
+        // Temporizador de los fantasmas élite del Modo Caótico (Caos / Titán)
+        if (ghost.isChaosGhost || ghost.isTitanGhost) {
             const prevSec = Math.ceil(ghost.chaosTimer);
             if (freezeTimer <= 0) {
                 ghost.chaosTimer -= dt;
             }
             if (Math.ceil(ghost.chaosTimer) !== prevSec) updateStatusStrip();
             if (ghost.chaosTimer <= 0) {
-                spawnParticles(ghost.x, ghost.y, "#a855f7", 18, 120);
-                spawnShockwave(ghost.x, ghost.y, "#a855f7", 45);
+                const fxColor = ghost.isTitanGhost ? "#f97316" : "#a855f7";
+                spawnParticles(ghost.x, ghost.y, fxColor, 20, 125);
+                spawnShockwave(ghost.x, ghost.y, fxColor, 50);
                 ghosts.splice(gi, 1);
                 updateStatusStrip();
                 continue;
@@ -2406,17 +2463,27 @@ function updateGhosts(dt) {
         if (ghost.dir.y !== 0) ghost.x = center.x;
 
         const dist = Math.hypot(ghost.x - center.x, ghost.y - center.y);
-        const allowGate = ghost.state === "EATEN";
 
         if (dist <= step + 1.5 && ghost.lastTileKey !== tileKey) {
             ghost.x = center.x;
             ghost.y = center.y;
             ghost.dir = chooseGhostDirection(ghost, col, row);
             ghost.lastTileKey = tileKey;
-        } else if (!canMove(col, row, ghost.dir, allowGate) && dist <= step + 1.5) {
+        } else if (!canGhostStep(col, row, ghost.dir, ghost) && dist <= step + 1.5) {
             ghost.x = center.x;
             ghost.y = center.y;
             ghost.dir = chooseGhostDirection(ghost, col, row);
+        }
+
+        // Si el Titán avanza hacia un muro interno destructible, lo destroza al instante
+        if (ghost.isTitanGhost && ghost.state === "NORMAL" && (ghost.dir.x !== 0 || ghost.dir.y !== 0)) {
+            const aheadCol = col + ghost.dir.x;
+            const aheadRow = row + ghost.dir.y;
+            if (isDestructibleWall(aheadCol, aheadRow)) {
+                destroyWallTile(aheadCol, aheadRow);
+                sound.wallBreak();
+                screenShake = Math.max(screenShake, 0.09);
+            }
         }
 
         ghost.x += ghost.dir.x * step;
@@ -2433,16 +2500,18 @@ function updateGhosts(dt) {
 function checkGhostCollision(ghost) {
     if (ghost.state === "EATEN" || ghost.state === "IN_HOUSE" || ghost.state === "EXITING") return;
 
-    if (Math.hypot(ghost.x - pacman.x, ghost.y - pacman.y) < TILE * 0.68) {
+    const hitDist = ghost.isTitanGhost ? TILE * 0.84 : TILE * 0.68;
+    if (Math.hypot(ghost.x - pacman.x, ghost.y - pacman.y) < hitDist) {
         if (ghost.state === "FRIGHTENED") {
             ghostCombo++;
-            const pts = 200 * Math.pow(2, ghostCombo - 1);
-            addScore(pts, ghost.x, ghost.y, "#38bdf8");
+            const basePts = 200 * Math.pow(2, ghostCombo - 1);
+            const pts = ghost.isTitanGhost ? Math.max(600, basePts) : basePts;
+            addScore(pts, ghost.x, ghost.y, ghost.isTitanGhost ? "#fb923c" : "#38bdf8");
             sound.eatGhost();
-            screenShake = 0.16;
-            spawnParticles(ghost.x, ghost.y, "#38bdf8", 16, 125);
-            spawnShockwave(ghost.x, ghost.y, "#38bdf8", 44);
-            if (ghost.isChaosGhost) {
+            screenShake = ghost.isTitanGhost ? 0.24 : 0.16;
+            spawnParticles(ghost.x, ghost.y, ghost.isTitanGhost ? "#fb923c" : "#38bdf8", 18, 130);
+            spawnShockwave(ghost.x, ghost.y, ghost.isTitanGhost ? "#fb923c" : "#38bdf8", 52);
+            if (ghost.isChaosGhost || ghost.isTitanGhost) {
                 const idx = ghosts.indexOf(ghost);
                 if (idx !== -1) ghosts.splice(idx, 1);
                 updateStatusStrip();
@@ -2550,11 +2619,17 @@ function updateTimersAndEffects(dt) {
             spawnSpecialItem(true);
         }
 
-        if (!ghosts.some((g) => g.isChaosGhost)) {
+        if (!ghosts.some((g) => g.isChaosGhost || g.isTitanGhost)) {
             chaosGhostCooldown -= dt;
             if (chaosGhostCooldown <= 0) {
-                spawnChaosGhost();
-                chaosGhostCooldown = 22;
+                if (nextChaosBossType === "TITAN") {
+                    spawnTitanGhost();
+                    nextChaosBossType = "CHAOS";
+                } else {
+                    spawnChaosGhost();
+                    nextChaosBossType = "TITAN";
+                }
+                chaosGhostCooldown = 20;
             }
         }
     }
@@ -2982,7 +3057,8 @@ function drawPacman() {
 
 function drawGhosts() {
     for (const g of ghosts) {
-        const r = TILE * 0.43;
+        const isTitan = !!g.isTitanGhost;
+        const r = isTitan ? TILE * 0.62 : TILE * 0.43;
         ctx.save();
         ctx.translate(g.x, g.y);
 
@@ -3011,6 +3087,15 @@ function drawGhosts() {
             bodyColor = "#67e8f9";
         }
 
+        // Aura ardiente alrededor del Titán Destructor
+        if (isTitan && g.state === "NORMAL" && freezeTimer <= 0) {
+            const pulse = r + 3.5 + Math.sin(animTick * 10) * 1.6;
+            ctx.fillStyle = "rgba(249, 115, 22, 0.24)";
+            ctx.beginPath();
+            ctx.arc(0, 0, pulse, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
         ctx.fillStyle = bodyColor;
         ctx.beginPath();
         ctx.arc(0, -2, r, Math.PI, 0);
@@ -3022,23 +3107,45 @@ function drawGhosts() {
         ctx.closePath();
         ctx.fill();
 
-        if (freezeTimer > 0 && g.state !== "FRIGHTENED") {
+        if (isTitan && g.state === "NORMAL" && freezeTimer <= 0) {
+            ctx.strokeStyle = "#fde047";
+            ctx.lineWidth = 1.6;
+            ctx.stroke();
+        } else if (freezeTimer > 0 && g.state !== "FRIGHTENED") {
             ctx.strokeStyle = "#e0f2fe";
             ctx.lineWidth = 1.4;
             ctx.stroke();
         }
 
-        ctx.fillStyle = "#fff";
+        const eyeOffsetX = isTitan ? 5.6 : 4;
+        const eyeOffsetY = isTitan ? -4 : -3;
+        const eyeR = isTitan ? 4.2 : 3.2;
+        const pupilR = isTitan ? 2.1 : 1.6;
+
+        ctx.fillStyle = isTitan && g.state === "NORMAL" ? "#fef08a" : "#fff";
         ctx.beginPath();
-        ctx.arc(-4, -3, 3.2, 0, Math.PI * 2);
-        ctx.arc(4, -3, 3.2, 0, Math.PI * 2);
+        ctx.arc(-eyeOffsetX, eyeOffsetY, eyeR, 0, Math.PI * 2);
+        ctx.arc(eyeOffsetX, eyeOffsetY, eyeR, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.fillStyle = g.state === "FRIGHTENED" ? "#ef4444" : "#0f172a";
+        ctx.fillStyle = g.state === "FRIGHTENED" ? "#ef4444" : (isTitan ? "#7c2d12" : "#0f172a");
         ctx.beginPath();
-        ctx.arc(-4 + g.dir.x * 1.4, -3 + g.dir.y * 1.4, 1.6, 0, Math.PI * 2);
-        ctx.arc(4 + g.dir.x * 1.4, -3 + g.dir.y * 1.4, 1.6, 0, Math.PI * 2);
+        ctx.arc(-eyeOffsetX + g.dir.x * 1.6, eyeOffsetY + g.dir.y * 1.6, pupilR, 0, Math.PI * 2);
+        ctx.arc(eyeOffsetX + g.dir.x * 1.6, eyeOffsetY + g.dir.y * 1.6, pupilR, 0, Math.PI * 2);
         ctx.fill();
+
+        // Cejas furiosas del Titán
+        if (isTitan && g.state === "NORMAL") {
+            ctx.strokeStyle = "#450a0a";
+            ctx.lineWidth = 2.2;
+            ctx.lineCap = "round";
+            ctx.beginPath();
+            ctx.moveTo(-eyeOffsetX - 3.5, eyeOffsetY - 4.5);
+            ctx.lineTo(-eyeOffsetX + 2.8, eyeOffsetY - 2);
+            ctx.moveTo(eyeOffsetX + 3.5, eyeOffsetY - 4.5);
+            ctx.lineTo(eyeOffsetX - 2.8, eyeOffsetY - 2);
+            ctx.stroke();
+        }
 
         ctx.restore();
     }
@@ -3618,6 +3725,7 @@ function saveGameState() {
             reversePending: !!g.reversePending,
             recoveredFromPower: !!g.recoveredFromPower,
             isChaosGhost: !!g.isChaosGhost,
+            isTitanGhost: !!g.isTitanGhost,
             chaosTimer: g.chaosTimer || 0,
             bobPhase: g.bobPhase || 0
         })),
@@ -3638,7 +3746,8 @@ function saveGameState() {
             shieldActive,
             invulnTimer,
             chaosEventTimer,
-            chaosGhostCooldown
+            chaosGhostCooldown,
+            nextChaosBossType
         },
         bonusFruit: bonusFruit ? { ...bonusFruit } : null,
         powerItems: powerItems.map((it) => ({ ...it }))
@@ -3738,6 +3847,7 @@ function restoreSavedGame() {
         reversePending: !!g.reversePending,
         recoveredFromPower: !!g.recoveredFromPower,
         isChaosGhost: !!g.isChaosGhost,
+        isTitanGhost: !!g.isTitanGhost,
         chaosTimer: Number(g.chaosTimer) || 0,
         lastTileKey: "",
         bobPhase: Number(g.bobPhase) || 0
@@ -3758,7 +3868,8 @@ function restoreSavedGame() {
     shieldActive = !!data.powers?.shieldActive;
     invulnTimer = Math.max(0, Number(data.powers?.invulnTimer) || 0);
     chaosEventTimer = Math.max(0.5, Number(data.powers?.chaosEventTimer) || 9);
-    chaosGhostCooldown = Math.max(1, Number(data.powers?.chaosGhostCooldown) || 14);
+    chaosGhostCooldown = Math.max(1, Number(data.powers?.chaosGhostCooldown) || 12);
+    nextChaosBossType = data.powers?.nextChaosBossType === "CHAOS" ? "CHAOS" : "TITAN";
 
     bonusFruit = data.bonusFruit ? { ...data.bonusFruit } : null;
     powerItems = Array.isArray(data.powerItems) ? data.powerItems.map((it) => ({ ...it })) : [];
