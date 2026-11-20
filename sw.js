@@ -1,10 +1,11 @@
-const CACHE_NAME = "pacman-offline-v40";
+const CACHE_NAME = "pacman-offline-v41";
 const CORE_ASSETS = [
     "./",
     "./index.html",
     "./style.css",
     "./js/constants.js",
     "./js/maps.js",
+    "./js/mapGenerator.js",
     "./js/audio.js",
     "./js/input.js",
     "./js/renderer.js",

@@ -42,6 +42,8 @@ Versión moderna, **mobile-first** y **100% offline (PWA)** del clásico Pac-Man
 | **💣 Bomba Destructora** | *(Exclusivo de Modo Caótico)* Explota al recogerla y destruye muros internos en un radio de 2 casillas (protegiendo siempre bordes exteriores y la casa de fantasmas). |
 | **👾 5.º Fantasma Caótico** | *(Exclusivo de Modo Caótico)* Fantasma neón morado (`#a855f7`) más veloz que persigue agresivamente a Pac-Man durante `14s`. |
 | **👹 Titán Destructor** | *(Exclusivo de Modo Caótico)* Fantasma gigante (`1.45×`) con aura de fuego que aparece durante `16s` y **atraviesa y destruye muros internos** en su camino hacia Pac-Man (comérselo asustado da mínimo `+600` pts). |
+| **💥 Trampas de Espinas** | *(Modo Caótico y Mapas Infinitos)* Espinas neón giratorias colocadas en posiciones seguras (siempre rodeables). Tocarlas hace **explotar a Pac-Man**, pero puedes destruirlas con **Turbo Dash** (`+100` pts), **Escudo** o **Bomba Destructora**. |
+| **♾️ Mapas Infinitos** | Generador procedural simétrico (`js/mapGenerator.js`) disponible en el selector de Modo Caótico (`♾️`) y automáticamente al superar el Nivel 10 en Modo Arcade. |
 | **💚 Recuperación de Vidas** | Empiezas con 5 vidas (máximo 6). Si pierdes vidas (en *Poderes* o *Caótico*), se garantiza un **corazón verde** en el mapa. En todos los modos, cada **10,000 puntos** aparece un banner animado con **+1 vida (1-UP)** o **`+500` puntos bonus** si ya tienes todas las vidas. |
 
 ---

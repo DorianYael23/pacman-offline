@@ -19,6 +19,7 @@ import {
     keyToDir
 } from "./constants.js";
 import { LEVELS, cloneMap } from "./maps.js";
+import { generateInfiniteLevel, placeSafeSpikes } from "./mapGenerator.js";
 import { SoundEngine } from "./audio.js";
 import { setupInputs } from "./input.js";
 import { renderGame } from "./renderer.js";
@@ -83,6 +84,7 @@ if (arcadeSubMode !== "NORMAL" && arcadeSubMode !== "POWERS") arcadeSubMode = "P
 let selectedMapMode = localStorage.getItem("pacman_offline_mapmode") || "RANDOM";
 let currentLevelIndex = 0;
 let lastPlayedMapIndex = -1;
+let activeGeneratedLevel = null;
 
 let grid = [];
 let score = 0;
@@ -171,6 +173,7 @@ function getLevelProgress() {
 }
 
 function getLevelConfig() {
+    if (activeGeneratedLevel) return activeGeneratedLevel;
     return LEVELS[currentLevelIndex] || LEVELS[0];
 }
 
@@ -214,10 +217,10 @@ controlModeBtn.addEventListener("click", () => {
     applyControlMode(CONTROL_MODES[(idx + 1) % CONTROL_MODES.length]);
 });
 
-const MAP_OPTIONS = ["RANDOM", ...LEVELS.map((_, i) => String(i))];
+const MAP_OPTIONS = ["RANDOM", "INFINITE", ...LEVELS.map((_, i) => String(i))];
 
 function updateMapPickerUI() {
-    if (selectedMapMode !== "RANDOM") {
+    if (selectedMapMode !== "RANDOM" && selectedMapMode !== "INFINITE") {
         const parsed = Number(selectedMapMode);
         if (!Number.isInteger(parsed) || parsed < 0 || parsed >= LEVELS.length) {
             selectedMapMode = "RANDOM";
@@ -230,6 +233,13 @@ function updateMapPickerUI() {
         if (mapSwatchEl) {
             mapSwatchEl.style.background = "linear-gradient(135deg, #38bdf8, #a855f7, #facc15)";
             mapSwatchEl.style.boxShadow = "0 0 9px rgba(168, 85, 247, 0.8)";
+        }
+    } else if (selectedMapMode === "INFINITE") {
+        if (mapCurrentNameEl) mapCurrentNameEl.textContent = "♾️ Mapas Infinitos";
+        if (mapCurrentMetaEl) mapCurrentMetaEl.textContent = "Laberintos generados + espinas";
+        if (mapSwatchEl) {
+            mapSwatchEl.style.background = "linear-gradient(135deg, #22d3ee, #f43f5e, #facc15)";
+            mapSwatchEl.style.boxShadow = "0 0 10px rgba(34, 211, 238, 0.85)";
         }
     } else {
         const idx = Number(selectedMapMode);
@@ -277,10 +287,15 @@ function setSelectedMapMode(val, previewOnCanvas = true) {
     localStorage.setItem("pacman_offline_mapmode", selectedMapMode);
     updateMapPickerUI();
     if (previewOnCanvas && state === "MENU" && gameMode === "CHAOS") {
-        if (selectedMapMode !== "RANDOM") {
+        if (selectedMapMode === "INFINITE") {
+            activeGeneratedLevel = generateInfiniteLevel(1, true);
+            loadLevel();
+        } else if (selectedMapMode !== "RANDOM") {
+            activeGeneratedLevel = null;
             currentLevelIndex = Number(selectedMapMode);
             loadLevel();
         } else {
+            activeGeneratedLevel = null;
             currentLevelIndex = 0;
             loadLevel();
         }
@@ -300,6 +315,17 @@ function populateMapSelector() {
     randBtn.textContent = "🎲";
     randBtn.addEventListener("click", () => setSelectedMapMode("RANDOM"));
     mapDotsEl.appendChild(randBtn);
+
+    const infBtn = document.createElement("button");
+    infBtn.type = "button";
+    infBtn.className = "map-dot";
+    infBtn.dataset.val = "INFINITE";
+    infBtn.dataset.color = "#22d3ee";
+    infBtn.style.borderColor = "#22d3ee88";
+    infBtn.title = "Mapas Infinitos Generados + Espinas";
+    infBtn.textContent = "♾️";
+    infBtn.addEventListener("click", () => setSelectedMapMode("INFINITE"));
+    mapDotsEl.appendChild(infBtn);
 
     LEVELS.forEach((lvl, idx) => {
         const btn = document.createElement("button");
@@ -344,8 +370,13 @@ function applyGameMode(mode) {
     syncPowersVisibility();
 
     if (state === "MENU") {
-        currentLevelIndex =
-            gameMode === "CHAOS" && selectedMapMode !== "RANDOM" ? Number(selectedMapMode) : 0;
+        if (gameMode === "CHAOS" && selectedMapMode === "INFINITE") {
+            activeGeneratedLevel = generateInfiniteLevel(1, true);
+        } else {
+            activeGeneratedLevel = null;
+            currentLevelIndex =
+                gameMode === "CHAOS" && selectedMapMode !== "RANDOM" ? Number(selectedMapMode) : 0;
+        }
         loadLevel();
     }
 }
@@ -665,6 +696,10 @@ function resetPositions(isNewLevel = false) {
 function loadLevel() {
     const cfg = getLevelConfig();
     grid = cloneMap(cfg.map);
+    // En Modo Caótico (mapas clásicos), agregar 1–2 pares de espinas seguras si el mapa no trae ya
+    if (gameMode === "CHAOS" && !cfg.isGenerated) {
+        placeSafeSpikes(grid, cfg, Math.min(2, level));
+    }
     dotsRemaining = 0;
     dotsEatenInLevel = 0;
     bonusFruit = null;
@@ -713,11 +748,18 @@ function startNewGame() {
     shieldActive = false;
 
     if (gameMode === "CHAOS") {
-        currentLevelIndex = pickChaosMapIndex(lastPlayedMapIndex);
+        if (selectedMapMode === "INFINITE") {
+            activeGeneratedLevel = generateInfiniteLevel(level, true);
+        } else {
+            activeGeneratedLevel = null;
+            currentLevelIndex = pickChaosMapIndex(lastPlayedMapIndex);
+            lastPlayedMapIndex = currentLevelIndex;
+        }
     } else {
+        activeGeneratedLevel = null;
         currentLevelIndex = 0;
+        lastPlayedMapIndex = 0;
     }
-    lastPlayedMapIndex = currentLevelIndex;
 
     syncPowersVisibility();
     loadLevel();
@@ -759,7 +801,14 @@ function destroyWallsInRadius(centerCol, centerRow, radius = 2) {
     for (let r = centerRow - radius; r <= centerRow + radius; r++) {
         for (let c = centerCol - radius; c <= centerCol + radius; c++) {
             if (Math.hypot(c - centerCol, r - centerRow) <= radius + 0.25) {
-                if (destroyWallTile(c, r)) broken++;
+                if (destroyWallTile(c, r)) {
+                    broken++;
+                } else if (grid[r]?.[c] === 5) {
+                    grid[r][c] = 2;
+                    const pos = tileCenter(c, r);
+                    spawnParticles(pos.x, pos.y, "#f43f5e", 10, 110);
+                    broken++;
+                }
             }
         }
     }
@@ -1100,6 +1149,54 @@ function updatePacman(dt) {
 
     const cur = posToTile(pacman.x, pacman.y);
     eatTileDot(cur.row, cur.col);
+
+    // Colisión con Trampa de Espinas (cell === 5)
+    if (grid[cur.row]?.[cur.col] === 5 && state === "PLAYING") {
+        const sPos = tileCenter(cur.col, cur.row);
+        if (Math.hypot(pacman.x - sPos.x, pacman.y - sPos.y) < TILE * 0.42) {
+            if (dashTimer > 0) {
+                grid[cur.row][cur.col] = 2;
+                addScore(100, sPos.x, sPos.y, "#fb7185");
+                addFloatingText("💥 ¡ESPINAS!", sPos.x, sPos.y - 16, "#fb7185");
+                sound.wallBreak();
+                screenShake = Math.max(screenShake, 0.16);
+                spawnParticles(sPos.x, sPos.y, "#f43f5e", 14, 120);
+                vibrateShort(15);
+            } else if (shieldActive) {
+                shieldActive = false;
+                invulnTimer = 1.6;
+                grid[cur.row][cur.col] = 2;
+                sound.shieldBreak();
+                screenShake = 0.25;
+                spawnShockwave(sPos.x, sPos.y, "#a855f7", 85);
+                spawnParticles(sPos.x, sPos.y, "#f43f5e", 16, 130);
+                addFloatingText("¡ESCUDO!", sPos.x, sPos.y - 14, "#c084fc");
+                updateStatusStrip();
+                vibrateShort(22);
+            } else if (invulnTimer <= 0) {
+                // ¡Pac-Man EXPLOTA al tocar las espinas!
+                pacman.exploded = true;
+                lives--;
+                dotStreak = 0;
+                comboMultiplier = 1;
+                comboTimer = 0;
+                updateHUD();
+                updateStatusStrip();
+                sound.bomb();
+                screenShake = 0.38;
+                vibrateShort(45);
+                addFloatingText("💥 ¡BOOM!", pacman.x, pacman.y - 16, "#f97316");
+                spawnShockwave(pacman.x, pacman.y, "#f43f5e", 95);
+                spawnShockwave(pacman.x, pacman.y, "#facc15", 60);
+                spawnParticles(pacman.x, pacman.y, "#facc15", 18, 175);
+                spawnParticles(pacman.x, pacman.y, "#f97316", 14, 155);
+                spawnParticles(pacman.x, pacman.y, "#ef4444", 10, 140);
+                state = "DYING";
+                stateTimer = 0.95;
+                return;
+            }
+        }
+    }
 
     if (magnetTimer > 0 && state === "PLAYING") {
         const radiusTiles = 2;
@@ -1668,6 +1765,16 @@ function saveGameState() {
         arcadeSubMode,
         selectedMapMode,
         currentLevelIndex,
+        generatedMeta: activeGeneratedLevel
+            ? {
+                name: activeGeneratedLevel.name,
+                isGenerated: true,
+                theme: activeGeneratedLevel.theme,
+                pacmanSpawn: activeGeneratedLevel.pacmanSpawn,
+                ghostGate: activeGeneratedLevel.ghostGate,
+                ghostSpawns: activeGeneratedLevel.ghostSpawns
+            }
+            : null,
         score,
         level,
         lives,
@@ -1776,6 +1883,9 @@ function restoreSavedGame() {
 
     currentLevelIndex = Math.max(0, Math.min(LEVELS.length - 1, Number(data.currentLevelIndex) || 0));
     lastPlayedMapIndex = currentLevelIndex;
+    activeGeneratedLevel = data.generatedMeta
+        ? { ...data.generatedMeta, map: cloneMap(data.grid) }
+        : null;
 
     score = Math.max(0, Number(data.score) || 0);
     level = Math.max(1, Number(data.level) || 1);
@@ -2091,15 +2201,26 @@ function gameLoop(timestamp) {
         if (stateTimer <= 0) {
             level++;
             if (gameMode === "CHAOS") {
-                if (selectedMapMode === "RANDOM") {
-                    currentLevelIndex = pickChaosMapIndex(currentLevelIndex);
+                if (selectedMapMode === "INFINITE") {
+                    activeGeneratedLevel = generateInfiniteLevel(level, true);
                 } else {
-                    currentLevelIndex = (currentLevelIndex + 1) % LEVELS.length;
+                    activeGeneratedLevel = null;
+                    if (selectedMapMode === "RANDOM") {
+                        currentLevelIndex = pickChaosMapIndex(currentLevelIndex);
+                    } else {
+                        currentLevelIndex = (currentLevelIndex + 1) % LEVELS.length;
+                    }
+                    lastPlayedMapIndex = currentLevelIndex;
                 }
             } else {
-                currentLevelIndex = (level - 1) % LEVELS.length;
+                if (level > LEVELS.length) {
+                    activeGeneratedLevel = generateInfiniteLevel(level, isPowersEnabled());
+                } else {
+                    activeGeneratedLevel = null;
+                    currentLevelIndex = level - 1;
+                    lastPlayedMapIndex = currentLevelIndex;
+                }
             }
-            lastPlayedMapIndex = currentLevelIndex;
             loadLevel();
             beginReadyPhase();
             saveGameState();
