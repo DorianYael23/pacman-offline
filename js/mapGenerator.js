@@ -74,7 +74,7 @@ function isHouseProtected(c, r, gateCol, gateRow) {
     return Math.abs(c - gateCol) <= 3 && r >= gateRow - 1 && r <= gateRow + 3;
 }
 
-function getReachableSet(grid, startCol, startRow, treatSpikesAsBlocked = false) {
+function getReachableSet(grid, startCol, startRow) {
     const vis = new Set();
     const q = [[startCol, startRow]];
     vis.add(`${startCol},${startRow}`);
@@ -88,7 +88,6 @@ function getReachableSet(grid, startCol, startRow, treatSpikesAsBlocked = false)
             if (nr < 0 || nr >= ROWS) continue;
             const cell = grid[nr][nc];
             if (cell === 1 || cell === 4) continue;
-            if (treatSpikesAsBlocked && cell === 5) continue;
             const k = `${nc},${nr}`;
             if (!vis.has(k)) {
                 vis.add(k);
@@ -100,7 +99,7 @@ function getReachableSet(grid, startCol, startRow, treatSpikesAsBlocked = false)
 }
 
 function validateGeneratedMap(grid, pacmanSpawn) {
-    const vis = getReachableSet(grid, pacmanSpawn.col, pacmanSpawn.row, true);
+    const vis = getReachableSet(grid, pacmanSpawn.col, pacmanSpawn.row);
     const dirs = [[0, 1], [0, -1], [1, 0], [-1, 0]];
 
     for (let r = 0; r < ROWS; r++) {
@@ -129,60 +128,6 @@ function validateGeneratedMap(grid, pacmanSpawn) {
         }
     }
     return true;
-}
-
-export function placeSafeSpikes(grid, cfg, pairCount = 2) {
-    const pSpawn = cfg.pacmanSpawn;
-    const gate = cfg.ghostGate;
-    const candidates = [];
-
-    for (let r = 2; r < ROWS - 2; r++) {
-        for (let c = 2; c <= 8; c++) {
-            const mc = COLS - 1 - c;
-            if (grid[r][c] !== 0 || grid[r][mc] !== 0) continue;
-            if (isHouseProtected(c, r, gate.col, gate.row)) continue;
-            if (Math.hypot(c - pSpawn.col, r - pSpawn.row) < 3.5) continue;
-            candidates.push({ c, r, mc });
-        }
-    }
-
-    // Mezclar candidatos
-    for (let i = candidates.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
-    }
-
-    let placed = 0;
-    const placedPos = [];
-
-    for (const cand of candidates) {
-        if (placed >= pairCount) break;
-        const { c, r, mc } = cand;
-        if (placedPos.some((p) => Math.hypot(p.c - c, p.r - r) < 4)) continue;
-
-        grid[r][c] = 5;
-        grid[r][mc] = 5;
-
-        // Verificar que todos los puntos restantes sigan siendo 100% alcanzables SIN tocar espinas
-        const vis = getReachableSet(grid, pSpawn.col, pSpawn.row, true);
-        let allReachable = true;
-        for (let rr = 1; rr < ROWS - 1 && allReachable; rr++) {
-            for (let cc = 1; cc < COLS - 1; cc++) {
-                if ((grid[rr][cc] === 0 || grid[rr][cc] === 3) && !vis.has(`${cc},${rr}`)) {
-                    allReachable = false;
-                    break;
-                }
-            }
-        }
-
-        if (allReachable) {
-            placed++;
-            placedPos.push({ c, r });
-        } else {
-            grid[r][c] = 0;
-            grid[r][mc] = 0;
-        }
-    }
 }
 
 function buildProceduralGrid() {
@@ -230,7 +175,7 @@ function buildProceduralGrid() {
     return g;
 }
 
-export function generateInfiniteLevel(levelNumber, withSpikes = true) {
+export function generateInfiniteLevel(levelNumber) {
     const theme = INFINITE_THEMES[Math.floor(Math.random() * INFINITE_THEMES.length)];
     const pSpawn = { col: 9, row: 15 };
     const gate = { col: 9, row: 8 };
@@ -250,7 +195,7 @@ export function generateInfiniteLevel(levelNumber, withSpikes = true) {
         finalMap = cloneMap(fallback.map);
     }
 
-    const cfg = {
+    return {
         name: `Infinito #${levelNumber} - ${theme.label}`,
         isGenerated: true,
         theme: { ...theme },
@@ -264,11 +209,4 @@ export function generateInfiniteLevel(levelNumber, withSpikes = true) {
         ],
         map: finalMap
     };
-
-    if (withSpikes) {
-        const pairCount = Math.min(3, 1 + Math.floor(levelNumber / 2));
-        placeSafeSpikes(cfg.map, cfg, pairCount);
-    }
-
-    return cfg;
 }

@@ -19,7 +19,7 @@ import {
     keyToDir
 } from "./constants.js";
 import { LEVELS, cloneMap } from "./maps.js";
-import { generateInfiniteLevel, placeSafeSpikes } from "./mapGenerator.js";
+import { generateInfiniteLevel } from "./mapGenerator.js";
 import { SoundEngine } from "./audio.js";
 import { setupInputs } from "./input.js";
 import { renderGame } from "./renderer.js";
@@ -265,7 +265,7 @@ function setSelectedMapMode(val, previewOnCanvas = true) {
     updateMapPickerUI();
     if (previewOnCanvas && state === "MENU" && gameMode === "CHAOS") {
         if (selectedMapMode === "INFINITE") {
-            activeGeneratedLevel = generateInfiniteLevel(1, true);
+            activeGeneratedLevel = generateInfiniteLevel(1);
             loadLevel();
         } else if (selectedMapMode !== "RANDOM") {
             activeGeneratedLevel = null;
@@ -302,7 +302,7 @@ function applyModePreset(preset) {
 
     if (state === "MENU") {
         if (gameMode === "CHAOS" && selectedMapMode === "INFINITE") {
-            activeGeneratedLevel = generateInfiniteLevel(1, true);
+            activeGeneratedLevel = generateInfiniteLevel(1);
         } else {
             activeGeneratedLevel = null;
             currentLevelIndex =
@@ -629,10 +629,6 @@ function resetPositions(isNewLevel = false) {
 function loadLevel() {
     const cfg = getLevelConfig();
     grid = cloneMap(cfg.map);
-    // En Modo Caótico (mapas clásicos), agregar 1–2 pares de espinas seguras si el mapa no trae ya
-    if (gameMode === "CHAOS" && !cfg.isGenerated) {
-        placeSafeSpikes(grid, cfg, Math.min(2, level));
-    }
     dotsRemaining = 0;
     dotsEatenInLevel = 0;
     bonusFruit = null;
@@ -682,7 +678,7 @@ function startNewGame() {
 
     if (gameMode === "CHAOS") {
         if (selectedMapMode === "INFINITE") {
-            activeGeneratedLevel = generateInfiniteLevel(level, true);
+            activeGeneratedLevel = generateInfiniteLevel(level);
         } else {
             activeGeneratedLevel = null;
             currentLevelIndex = pickChaosMapIndex(lastPlayedMapIndex);
@@ -735,11 +731,6 @@ function destroyWallsInRadius(centerCol, centerRow, radius = 2) {
         for (let c = centerCol - radius; c <= centerCol + radius; c++) {
             if (Math.hypot(c - centerCol, r - centerRow) <= radius + 0.25) {
                 if (destroyWallTile(c, r)) {
-                    broken++;
-                } else if (grid[r]?.[c] === 5) {
-                    grid[r][c] = 2;
-                    const pos = tileCenter(c, r);
-                    spawnParticles(pos.x, pos.y, "#f43f5e", 10, 110);
                     broken++;
                 }
             }
@@ -1090,54 +1081,6 @@ function updatePacman(dt) {
     const cur = posToTile(pacman.x, pacman.y);
     eatTileDot(cur.row, cur.col);
 
-    // Colisión con Trampa de Espinas (cell === 5)
-    if (grid[cur.row]?.[cur.col] === 5 && state === "PLAYING") {
-        const sPos = tileCenter(cur.col, cur.row);
-        if (Math.hypot(pacman.x - sPos.x, pacman.y - sPos.y) < TILE * 0.42) {
-            if (dashTimer > 0) {
-                grid[cur.row][cur.col] = 2;
-                addScore(100, sPos.x, sPos.y, "#fb7185");
-                addFloatingText("💥 ¡ESPINAS!", sPos.x, sPos.y - 16, "#fb7185");
-                sound.wallBreak();
-                screenShake = Math.max(screenShake, 0.16);
-                spawnParticles(sPos.x, sPos.y, "#f43f5e", 14, 120);
-                vibrateShort(15);
-            } else if (shieldActive) {
-                shieldActive = false;
-                invulnTimer = 1.6;
-                grid[cur.row][cur.col] = 2;
-                sound.shieldBreak();
-                screenShake = 0.25;
-                spawnShockwave(sPos.x, sPos.y, "#a855f7", 85);
-                spawnParticles(sPos.x, sPos.y, "#f43f5e", 16, 130);
-                addFloatingText("¡ESCUDO!", sPos.x, sPos.y - 14, "#c084fc");
-                updateStatusStrip();
-                vibrateShort(22);
-            } else if (invulnTimer <= 0) {
-                // ¡Pac-Man EXPLOTA al tocar las espinas!
-                pacman.exploded = true;
-                lives--;
-                dotStreak = 0;
-                comboMultiplier = 1;
-                comboTimer = 0;
-                updateHUD();
-                updateStatusStrip();
-                sound.bomb();
-                screenShake = 0.38;
-                vibrateShort(45);
-                addFloatingText("💥 ¡BOOM!", pacman.x, pacman.y - 16, "#f97316");
-                spawnShockwave(pacman.x, pacman.y, "#f43f5e", 95);
-                spawnShockwave(pacman.x, pacman.y, "#facc15", 60);
-                spawnParticles(pacman.x, pacman.y, "#facc15", 18, 175);
-                spawnParticles(pacman.x, pacman.y, "#f97316", 14, 155);
-                spawnParticles(pacman.x, pacman.y, "#ef4444", 10, 140);
-                state = "DYING";
-                stateTimer = 0.95;
-                return;
-            }
-        }
-    }
-
     if (magnetTimer > 0 && state === "PLAYING") {
         const radiusTiles = 2;
         for (let r = Math.max(0, cur.row - radiusTiles); r <= Math.min(ROWS - 1, cur.row + radiusTiles); r++) {
@@ -1267,7 +1210,7 @@ function spawnClonePacman(x, y) {
     const center = tileCenter(t.col, t.row);
     const startDir =
         [DIRS.LEFT, DIRS.RIGHT, DIRS.UP, DIRS.DOWN].find(
-            (d) => canMove(t.col, t.row, d, false) && grid[t.row + d.y]?.[(t.col + d.x + COLS) % COLS] !== 5
+            (d) => canMove(t.col, t.row, d, false)
         ) || DIRS.RIGHT;
 
     clonePacman = {
@@ -1291,12 +1234,7 @@ function spawnClonePacman(x, y) {
 
 function chooseCloneDirection(col, row) {
     const candidates = [DIRS.UP, DIRS.LEFT, DIRS.DOWN, DIRS.RIGHT];
-    const valid = candidates.filter((d) => {
-        if (!canMove(col, row, d, false)) return false;
-        const nc = (col + d.x + COLS) % COLS;
-        const nr = row + d.y;
-        return grid[nr]?.[nc] !== 5; // Esquiva espinas
-    });
+    const valid = candidates.filter((d) => canMove(col, row, d, false));
 
     if (valid.length === 0) return DIRS.NONE;
 
@@ -2007,7 +1945,7 @@ function restoreSavedGame() {
     lives = Math.max(1, Math.min(MAX_LIVES, Number(data.lives) || START_LIVES));
     nextExtraLifeScore = Math.max(EXTRA_LIFE_STEP, Number(data.nextExtraLifeScore) || EXTRA_LIFE_STEP);
 
-    grid = cloneMap(data.grid);
+    grid = cloneMap(data.grid).map((row) => row.map((cell) => (cell === 5 ? 2 : cell)));
     totalDotsInLevel = Math.max(1, Number(data.totalDotsInLevel) || 1);
     dotsRemaining = Math.max(1, Number(data.dotsRemaining) || 1);
     dotsEatenInLevel = Math.max(0, Number(data.dotsEatenInLevel) || 0);
@@ -2335,7 +2273,7 @@ function gameLoop(timestamp) {
             level++;
             if (gameMode === "CHAOS") {
                 if (selectedMapMode === "INFINITE") {
-                    activeGeneratedLevel = generateInfiniteLevel(level, true);
+                    activeGeneratedLevel = generateInfiniteLevel(level);
                 } else {
                     activeGeneratedLevel = null;
                     if (selectedMapMode === "RANDOM") {
@@ -2347,7 +2285,7 @@ function gameLoop(timestamp) {
                 }
             } else {
                 if (level > LEVELS.length) {
-                    activeGeneratedLevel = generateInfiniteLevel(level, isPowersEnabled());
+                    activeGeneratedLevel = generateInfiniteLevel(level);
                 } else {
                     activeGeneratedLevel = null;
                     currentLevelIndex = level - 1;

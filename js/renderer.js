@@ -113,39 +113,6 @@ function drawMaze(ctx, canvas, stateObj) {
                 ctx.arc(x + TILE / 2, y + TILE / 2, pulse, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.restore();
-            } else if (cell === 5) {
-                // Trampa de Espinas Neón (hace explotar a Pac-Man)
-                const cx = x + TILE / 2;
-                const cy = y + TILE / 2;
-                const pulse = 0.85 + Math.sin(animTick * 8 + c + r) * 0.15;
-                ctx.save();
-                ctx.translate(cx, cy);
-                ctx.fillStyle = "rgba(244, 63, 94, 0.22)";
-                ctx.beginPath();
-                ctx.arc(0, 0, 9.5 * pulse, 0, Math.PI * 2);
-                ctx.fill();
-
-                ctx.rotate(animTick * 1.4);
-                ctx.fillStyle = "#f43f5e";
-                ctx.strokeStyle = "#fda4af";
-                ctx.lineWidth = 1.2;
-                ctx.beginPath();
-                const spikes = 8;
-                for (let s = 0; s < spikes * 2; s++) {
-                    const rad = s % 2 === 0 ? 8.2 * pulse : 3.4;
-                    const ang = (s * Math.PI) / spikes;
-                    if (s === 0) ctx.moveTo(Math.cos(ang) * rad, Math.sin(ang) * rad);
-                    else ctx.lineTo(Math.cos(ang) * rad, Math.sin(ang) * rad);
-                }
-                ctx.closePath();
-                ctx.fill();
-                ctx.stroke();
-
-                ctx.fillStyle = "#fef08a";
-                ctx.beginPath();
-                ctx.arc(0, 0, 2.2, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
             }
         }
     }
@@ -407,29 +374,6 @@ function drawPacman(ctx, stateObj) {
 
     if (state === "DYING") {
         const progress = 1 - Math.max(0, stateTimer) / 0.95;
-        if (pacman.exploded) {
-            // Animación de explosión al tocar espinas
-            ctx.save();
-            ctx.translate(pacman.x, pacman.y);
-            const fade = Math.max(0, 1 - progress * 1.15);
-            if (fade > 0) {
-                ctx.globalAlpha = fade;
-                const blastR = TILE * (0.45 + progress * 1.35);
-                ctx.fillStyle = progress < 0.35 ? "#fef08a" : "#f97316";
-                ctx.beginPath();
-                const rays = 10;
-                for (let i = 0; i < rays * 2; i++) {
-                    const rr = i % 2 === 0 ? blastR : blastR * 0.42;
-                    const aa = (i * Math.PI) / rays + progress * 2.5;
-                    if (i === 0) ctx.moveTo(Math.cos(aa) * rr, Math.sin(aa) * rr);
-                    else ctx.lineTo(Math.cos(aa) * rr, Math.sin(aa) * rr);
-                }
-                ctx.closePath();
-                ctx.fill();
-            }
-            ctx.restore();
-            return;
-        }
         const startA = progress * Math.PI;
         const endA = Math.PI * 2 - progress * Math.PI;
         if (endA > startA) {
