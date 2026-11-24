@@ -18,11 +18,15 @@ export function setupInputs({
     togglePause,
     toggleMute,
     startMenuMusic,
-    cycleMode,
+    navigateMenuVertical,
+    navigateMenuHorizontal,
     cycleMap,
+    resetMapRandom,
+    activateFocusedMenuItem,
     confirmMenuAction,
     startNewGame,
     goToMainMenu,
+    onGamepadActivity,
     onGamepadNotice
 }) {
     // Desbloquear música de menú si el navegador bloqueó el autoplay
@@ -325,6 +329,7 @@ export function setupInputs({
         if (!e.gamepad) return;
         lastActiveGamepadIndex = e.gamepad.index;
         prevGamepadState.set(e.gamepad.index, {});
+        if (onGamepadActivity) onGamepadActivity(true);
         if (onGamepadNotice) {
             onGamepadNotice("🎮 CONTROL CONECTADO", getFriendlyGamepadName(e.gamepad.id), "#38bdf8");
         }
@@ -335,6 +340,10 @@ export function setupInputs({
         prevGamepadState.delete(e.gamepad.index);
         if (lastActiveGamepadIndex === e.gamepad.index) {
             lastActiveGamepadIndex = -1;
+        }
+        const pads = navigator.getGamepads ? Array.from(navigator.getGamepads()).filter((p) => p && p.connected) : [];
+        if (pads.length === 0 && onGamepadActivity) {
+            onGamepadActivity(false);
         }
         const wasPlaying = getState() === "PLAYING";
         if (wasPlaying) {
@@ -429,6 +438,7 @@ export function setupInputs({
 
             if (anyInput) {
                 lastActiveGamepadIndex = gp.index;
+                if (onGamepadActivity) onGamepadActivity(true);
                 if (stateNow === "MENU") {
                     startMenuMusic();
                 }
@@ -483,7 +493,23 @@ export function setupInputs({
                     togglePause();
                 }
             } else if (stateNow === "PAUSED") {
-                if (justPressed("start") || justPressed("a")) {
+                const navUp = cur.up || axY < -0.55;
+                const navDown = cur.down || axY > 0.55;
+
+                if (now >= menuNavCooldownUntil) {
+                    if (navUp && navigateMenuVertical) {
+                        navigateMenuVertical(-1);
+                        menuNavCooldownUntil = now + 200;
+                    } else if (navDown && navigateMenuVertical) {
+                        navigateMenuVertical(1);
+                        menuNavCooldownUntil = now + 200;
+                    }
+                }
+
+                if (justPressed("a")) {
+                    if (activateFocusedMenuItem) activateFocusedMenuItem();
+                    else togglePause();
+                } else if (justPressed("start")) {
                     togglePause();
                 } else if (justPressed("b") && goToMainMenu) {
                     goToMainMenu();
@@ -491,30 +517,41 @@ export function setupInputs({
                     startNewGame();
                 }
             } else if (stateNow === "MENU" || stateNow === "GAME_OVER") {
-                // Navegación de modos (Izquierda / Derecha)
                 const navLeft = cur.left || axX < -0.55;
                 const navRight = cur.right || axX > 0.55;
                 const navUp = cur.up || axY < -0.55;
                 const navDown = cur.down || axY > 0.55;
 
                 if (now >= menuNavCooldownUntil) {
-                    if (navLeft && cycleMode) {
-                        cycleMode(-1);
-                        menuNavCooldownUntil = now + 220;
-                    } else if (navRight && cycleMode) {
-                        cycleMode(1);
-                        menuNavCooldownUntil = now + 220;
-                    } else if ((navUp || cur.lb) && cycleMap) {
-                        cycleMap(-1);
-                        menuNavCooldownUntil = now + 210;
-                    } else if ((navDown || cur.rb) && cycleMap) {
-                        cycleMap(1);
-                        menuNavCooldownUntil = now + 210;
+                    if (navUp && navigateMenuVertical) {
+                        navigateMenuVertical(-1);
+                        menuNavCooldownUntil = now + 200;
+                    } else if (navDown && navigateMenuVertical) {
+                        navigateMenuVertical(1);
+                        menuNavCooldownUntil = now + 200;
+                    } else if (navLeft && navigateMenuHorizontal) {
+                        navigateMenuHorizontal(-1);
+                        menuNavCooldownUntil = now + 200;
+                    } else if (navRight && navigateMenuHorizontal) {
+                        navigateMenuHorizontal(1);
+                        menuNavCooldownUntil = now + 200;
                     }
                 }
 
-                // Confirmar (Continuar si hay partida guardada, si no Jugar)
-                if (justPressed("a") || justPressed("start")) {
+                // Atajos directos LB / RB para cambiar mapa en Modo Caótico desde cualquier fila
+                if (justPressed("lb") && cycleMap) {
+                    cycleMap(-1);
+                } else if (justPressed("rb") && cycleMap) {
+                    cycleMap(1);
+                } else if (justPressed("x") && resetMapRandom) {
+                    resetMapRandom();
+                }
+
+                // A ejecuta la opción resaltada; Start inicia/continúa directo; Y nueva partida
+                if (justPressed("a")) {
+                    if (activateFocusedMenuItem) activateFocusedMenuItem();
+                    else if (confirmMenuAction) confirmMenuAction();
+                } else if (justPressed("start")) {
                     if (confirmMenuAction) confirmMenuAction();
                 } else if (justPressed("y") && startNewGame) {
                     startNewGame();

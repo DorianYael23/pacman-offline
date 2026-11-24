@@ -37,6 +37,7 @@ const overlayTitleEl = document.getElementById("overlay-title");
 const overlaySubEl = document.getElementById("overlay-subtitle");
 const savedBannerEl = document.getElementById("saved-banner");
 const menuConfigEl = document.getElementById("menu-config");
+const modeSelectorEl = menuConfigEl ? menuConfigEl.querySelector(".mode-selector") : null;
 const modeNormalBtn = document.getElementById("mode-normal-btn");
 const modePowersBtn = document.getElementById("mode-powers-btn");
 const modeChaosBtn = document.getElementById("mode-chaos-btn");
@@ -49,6 +50,7 @@ const mapCurrentNameEl = document.getElementById("map-current-name");
 const continueBtn = document.getElementById("continue-btn");
 const menuBtn = document.getElementById("menu-btn");
 const startBtn = document.getElementById("start-btn");
+const gamepadHintEl = document.getElementById("gamepad-hint");
 const statusStripEl = document.getElementById("status-strip");
 const toolbarEl = document.getElementById("toolbar");
 const gameToastEl = document.getElementById("game-toast");
@@ -2113,6 +2115,9 @@ function refreshMenuOverlay() {
         startBtn.classList.remove("btn-secondary");
         startBtn.classList.add("btn-primary");
     }
+    if (typeof updateGamepadOverlayUI === "function") {
+        updateGamepadOverlayUI(saved ? "CONTINUE" : "START");
+    }
 }
 
 function pauseForBackground() {
@@ -2136,6 +2141,9 @@ function pauseForBackground() {
         startBtn.classList.remove("btn-primary");
         startBtn.classList.add("btn-secondary");
         overlayEl.classList.remove("hidden");
+        if (typeof updateGamepadOverlayUI === "function") {
+            updateGamepadOverlayUI("CONTINUE");
+        }
     } else if (state === "PAUSED") {
         sound.stopAllLoops();
         saveGameState();
@@ -2173,6 +2181,9 @@ function togglePause() {
         startBtn.classList.remove("btn-primary");
         startBtn.classList.add("btn-secondary");
         overlayEl.classList.remove("hidden");
+        if (typeof updateGamepadOverlayUI === "function") {
+            updateGamepadOverlayUI("CONTINUE");
+        }
     } else if (state === "PAUSED") {
         state = "PLAYING";
         pauseBtn.classList.remove("is-paused");
@@ -2213,18 +2224,111 @@ pauseBtn.addEventListener("click", togglePause);
 muteBtn.addEventListener("click", toggleMute);
 
 const MODE_PRESETS = ["NORMAL", "POWERS", "CHAOS"];
+let gamepadUiActive = false;
+let focusedMenuKey = "START";
+
+function getVisibleOverlayItems() {
+    const items = [];
+    if (menuConfigEl && !menuConfigEl.classList.contains("hidden")) {
+        if (modeSelectorEl) items.push({ key: "MODE", el: modeSelectorEl });
+        if (chaosMapWrap && !chaosMapWrap.classList.contains("hidden")) {
+            items.push({ key: "MAP", el: chaosMapWrap });
+        }
+    }
+    if (continueBtn && !continueBtn.classList.contains("hidden")) {
+        items.push({ key: "CONTINUE", el: continueBtn });
+    }
+    if (menuBtn && !menuBtn.classList.contains("hidden")) {
+        items.push({ key: "MENU", el: menuBtn });
+    }
+    if (startBtn && !startBtn.classList.contains("hidden")) {
+        items.push({ key: "START", el: startBtn });
+    }
+    return items;
+}
+
+function clearGamepadFocusVisual() {
+    const all = [modeSelectorEl, chaosMapWrap, continueBtn, menuBtn, startBtn];
+    for (const el of all) {
+        if (el) el.classList.remove("gamepad-focus");
+    }
+}
+
+function updateGamepadOverlayUI(preferredKey = null) {
+    clearGamepadFocusVisual();
+    const items = getVisibleOverlayItems();
+
+    if (preferredKey && items.some((it) => it.key === preferredKey)) {
+        focusedMenuKey = preferredKey;
+    } else if (!items.some((it) => it.key === focusedMenuKey)) {
+        const def = items.find((it) => it.key === "CONTINUE") || items.find((it) => it.key === "START") || items[0];
+        focusedMenuKey = def ? def.key : "START";
+    }
+
+    if (gamepadHintEl) {
+        if (!gamepadUiActive || !overlayEl || overlayEl.classList.contains("hidden")) {
+            gamepadHintEl.classList.add("hidden");
+        } else {
+            gamepadHintEl.classList.remove("hidden");
+            if (state === "PAUSED") {
+                gamepadHintEl.textContent = "↕ Elegir • Ⓐ Aceptar • Ⓑ Menú • Ⓨ Nueva";
+            } else if (gameMode === "CHAOS") {
+                gamepadHintEl.textContent = "↕ Elegir • ↔ Modo/Mapa • Ⓐ Aceptar • LB/RB Mapa";
+            } else {
+                gamepadHintEl.textContent = "↕ Elegir • ↔ Modo • Ⓐ Aceptar • Ⓨ Nueva";
+            }
+        }
+    }
+
+    if (!gamepadUiActive || !overlayEl || overlayEl.classList.contains("hidden")) return;
+    const activeItem = items.find((it) => it.key === focusedMenuKey);
+    if (activeItem && activeItem.el) {
+        activeItem.el.classList.add("gamepad-focus");
+    }
+}
+
+function setGamepadUiActive(active) {
+    if (gamepadUiActive === active) return;
+    gamepadUiActive = active;
+    updateGamepadOverlayUI();
+}
 
 function cycleMode(delta) {
     const curPreset = gameMode === "CHAOS" ? "CHAOS" : arcadeSubMode;
     const idx = MODE_PRESETS.indexOf(curPreset);
     const next = MODE_PRESETS[(idx + delta + MODE_PRESETS.length) % MODE_PRESETS.length];
     applyModePreset(next);
+    updateGamepadOverlayUI();
 }
 
 function cycleMap(delta) {
     if (gameMode !== "CHAOS") return;
     const idx = MAP_OPTIONS.indexOf(selectedMapMode);
     setSelectedMapMode(MAP_OPTIONS[(idx + delta + MAP_OPTIONS.length) % MAP_OPTIONS.length]);
+    updateGamepadOverlayUI();
+}
+
+function resetMapRandom() {
+    if (gameMode !== "CHAOS") return;
+    setSelectedMapMode("RANDOM");
+    updateGamepadOverlayUI();
+}
+
+function navigateMenuVertical(delta) {
+    const items = getVisibleOverlayItems();
+    if (items.length === 0) return;
+    const idx = items.findIndex((it) => it.key === focusedMenuKey);
+    const nextIdx = idx < 0 ? 0 : (idx + delta + items.length) % items.length;
+    focusedMenuKey = items[nextIdx].key;
+    updateGamepadOverlayUI(focusedMenuKey);
+}
+
+function navigateMenuHorizontal(delta) {
+    if (focusedMenuKey === "MAP" && gameMode === "CHAOS") {
+        cycleMap(delta);
+    } else {
+        cycleMode(delta);
+    }
 }
 
 function confirmMenuAction() {
@@ -2235,6 +2339,28 @@ function confirmMenuAction() {
     } else {
         startNewGame();
     }
+}
+
+function activateFocusedMenuItem() {
+    if (focusedMenuKey === "CONTINUE") {
+        if (state === "PAUSED") togglePause();
+        else if (!restoreSavedGame()) startNewGame();
+    } else if (focusedMenuKey === "MENU") {
+        goToMainMenu();
+    } else if (focusedMenuKey === "START") {
+        startNewGame();
+    } else {
+        confirmMenuAction();
+    }
+}
+
+// Al tocar o hacer clic en el menú con mouse/dedo, limpia el foco de control hasta volver a usar el mando
+if (overlayEl) {
+    overlayEl.addEventListener("pointerdown", () => {
+        if (gamepadUiActive) {
+            clearGamepadFocusVisual();
+        }
+    }, { passive: true });
 }
 
 inputController = setupInputs({
@@ -2248,11 +2374,15 @@ inputController = setupInputs({
     togglePause,
     toggleMute,
     startMenuMusic,
-    cycleMode,
+    navigateMenuVertical,
+    navigateMenuHorizontal,
     cycleMap,
+    resetMapRandom,
+    activateFocusedMenuItem,
     confirmMenuAction,
     startNewGame,
     goToMainMenu,
+    onGamepadActivity: setGamepadUiActive,
     onGamepadNotice: (title, sub, color) => showMilestoneBanner(title, sub, color)
 });
 
@@ -2302,6 +2432,9 @@ function gameLoop(timestamp) {
                 startBtn.classList.add("btn-primary");
                 startBtn.textContent = "▶ JUGAR DE NUEVO";
                 overlayEl.classList.remove("hidden");
+                if (typeof updateGamepadOverlayUI === "function") {
+                    updateGamepadOverlayUI("START");
+                }
             } else {
                 resetPositions(false);
                 beginReadyPhase();

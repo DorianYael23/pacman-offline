@@ -560,6 +560,29 @@ canvas {
   width: 100%;
 }
 
+.gamepad-focus {
+  outline: 2.5px solid var(--accent) !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.22), 0 0 18px rgba(250, 204, 21, 0.35) !important;
+  transform: scale(1.015);
+}
+
+.map-picker.gamepad-focus {
+  border-radius: 13px;
+  padding: 2px;
+}
+
+.gamepad-hint {
+  font-size: 0.7rem !important;
+  font-weight: 700;
+  color: #cbd5e1 !important;
+  background: rgba(9, 13, 22, 0.7);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 999px;
+  padding: 5px 12px;
+  letter-spacing: 0.02em;
+}
+
 .power-pill.chaos {
   background: rgba(168, 85, 247, 0.28);
   border-color: rgba(192, 132, 252, 0.75);
