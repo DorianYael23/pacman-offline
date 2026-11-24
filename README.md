@@ -58,8 +58,9 @@ Versión moderna, **mobile-first** y **100% offline (PWA)** del clásico Pac-Man
 ### 💻 En PC
 - **Moverse:** `Flechas` o `W` `A` `S` `D`
 - **Activar Turbo:** `Espacio` o `Shift`
-- **Pausar / Continuar:** `P`
+- **Pausar / Continuar:** `P` o `Esc`
 - **Silenciar / Activar sonido:** `M`
+- **Navegar menús y pausa:** `↑` / `↓` (o `W` / `S`) mueve el cursor entre opciones, `←` / `→` (o `A` / `D`) cambia de modo o mapa en Caótico, `Enter` o `Espacio` acepta, `Backspace` vuelve al menú desde pausa y `R` regresa el mapa a Aleatorio.
 
 ### 🎮 Con control (Xbox, PlayStation, Switch o genérico USB/Bluetooth)
 *(Conecta tu mando y presiona cualquier botón; el juego lo detecta automáticamente con cursor visual en los menús y vibración).*

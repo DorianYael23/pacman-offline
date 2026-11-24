@@ -48,12 +48,61 @@ export function setupInputs({
     // Teclado
     window.addEventListener("keydown", (e) => {
         const key = e.key.toLowerCase();
+        const st = getState();
+
         if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(key)) {
             e.preventDefault();
         }
 
-        if (getState() === "MENU") {
+        if (st === "MENU") {
             startMenuMusic();
+        }
+
+        if (key === "m") {
+            toggleMute();
+            return;
+        }
+
+        if (st === "MENU" || st === "GAME_OVER") {
+            if (key === "arrowup" || key === "w") {
+                if (onGamepadActivity) onGamepadActivity("KEYBOARD");
+                if (navigateMenuVertical) navigateMenuVertical(-1);
+            } else if (key === "arrowdown" || key === "s") {
+                if (onGamepadActivity) onGamepadActivity("KEYBOARD");
+                if (navigateMenuVertical) navigateMenuVertical(1);
+            } else if (key === "arrowleft" || key === "a") {
+                if (onGamepadActivity) onGamepadActivity("KEYBOARD");
+                if (navigateMenuHorizontal) navigateMenuHorizontal(-1);
+            } else if (key === "arrowright" || key === "d") {
+                if (onGamepadActivity) onGamepadActivity("KEYBOARD");
+                if (navigateMenuHorizontal) navigateMenuHorizontal(1);
+            } else if (key === "enter" || key === " ") {
+                e.preventDefault();
+                if (activateFocusedMenuItem) activateFocusedMenuItem();
+                else if (confirmMenuAction) confirmMenuAction();
+            } else if (key === "r" && resetMapRandom) {
+                resetMapRandom();
+            }
+            return;
+        }
+
+        if (st === "PAUSED") {
+            if (key === "arrowup" || key === "w") {
+                if (onGamepadActivity) onGamepadActivity("KEYBOARD");
+                if (navigateMenuVertical) navigateMenuVertical(-1);
+            } else if (key === "arrowdown" || key === "s") {
+                if (onGamepadActivity) onGamepadActivity("KEYBOARD");
+                if (navigateMenuVertical) navigateMenuVertical(1);
+            } else if (key === "enter" || key === " ") {
+                e.preventDefault();
+                if (activateFocusedMenuItem) activateFocusedMenuItem();
+                else togglePause();
+            } else if (key === "p" || key === "escape") {
+                togglePause();
+            } else if (key === "backspace" && goToMainMenu) {
+                goToMainMenu();
+            }
+            return;
         }
 
         if (key === "arrowup" || key === "w") setNextDirection(DIRS.UP);
@@ -61,8 +110,7 @@ export function setupInputs({
         else if (key === "arrowleft" || key === "a") setNextDirection(DIRS.LEFT);
         else if (key === "arrowright" || key === "d") setNextDirection(DIRS.RIGHT);
         else if (key === " " || key === "shift") triggerDash();
-        else if (key === "p") togglePause();
-        else if (key === "m") toggleMute();
+        else if (key === "p" || key === "escape") togglePause();
     });
 
     // 1) Control táctil ultra-responsivo (Solo dedo con ancla rodante y multitáctil)
@@ -329,7 +377,7 @@ export function setupInputs({
         if (!e.gamepad) return;
         lastActiveGamepadIndex = e.gamepad.index;
         prevGamepadState.set(e.gamepad.index, {});
-        if (onGamepadActivity) onGamepadActivity(true);
+        if (onGamepadActivity) onGamepadActivity("GAMEPAD");
         if (onGamepadNotice) {
             onGamepadNotice("🎮 CONTROL CONECTADO", getFriendlyGamepadName(e.gamepad.id), "#38bdf8");
         }
@@ -343,7 +391,7 @@ export function setupInputs({
         }
         const pads = navigator.getGamepads ? Array.from(navigator.getGamepads()).filter((p) => p && p.connected) : [];
         if (pads.length === 0 && onGamepadActivity) {
-            onGamepadActivity(false);
+            onGamepadActivity("NONE");
         }
         const wasPlaying = getState() === "PLAYING";
         if (wasPlaying) {
@@ -438,7 +486,7 @@ export function setupInputs({
 
             if (anyInput) {
                 lastActiveGamepadIndex = gp.index;
-                if (onGamepadActivity) onGamepadActivity(true);
+                if (onGamepadActivity) onGamepadActivity("GAMEPAD");
                 if (stateNow === "MENU") {
                     startMenuMusic();
                 }

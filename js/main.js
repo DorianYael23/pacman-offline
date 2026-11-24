@@ -2224,7 +2224,7 @@ pauseBtn.addEventListener("click", togglePause);
 muteBtn.addEventListener("click", toggleMute);
 
 const MODE_PRESETS = ["NORMAL", "POWERS", "CHAOS"];
-let gamepadUiActive = false;
+let navInputMode = "NONE"; // "NONE" | "KEYBOARD" | "GAMEPAD"
 let focusedMenuKey = "START";
 
 function getVisibleOverlayItems() {
@@ -2266,7 +2266,7 @@ function updateGamepadOverlayUI(preferredKey = null) {
     }
 
     if (gamepadHintEl) {
-        if (!gamepadUiActive || !overlayEl || overlayEl.classList.contains("hidden")) {
+        if (navInputMode !== "GAMEPAD" || !overlayEl || overlayEl.classList.contains("hidden")) {
             gamepadHintEl.classList.add("hidden");
         } else {
             gamepadHintEl.classList.remove("hidden");
@@ -2280,16 +2280,17 @@ function updateGamepadOverlayUI(preferredKey = null) {
         }
     }
 
-    if (!gamepadUiActive || !overlayEl || overlayEl.classList.contains("hidden")) return;
+    if (navInputMode === "NONE" || !overlayEl || overlayEl.classList.contains("hidden")) return;
     const activeItem = items.find((it) => it.key === focusedMenuKey);
     if (activeItem && activeItem.el) {
         activeItem.el.classList.add("gamepad-focus");
     }
 }
 
-function setGamepadUiActive(active) {
-    if (gamepadUiActive === active) return;
-    gamepadUiActive = active;
+function setNavInputMode(mode) {
+    const next = mode === "GAMEPAD" || mode === "KEYBOARD" ? mode : "NONE";
+    if (navInputMode === next) return;
+    navInputMode = next;
     updateGamepadOverlayUI();
 }
 
@@ -2354,11 +2355,12 @@ function activateFocusedMenuItem() {
     }
 }
 
-// Al tocar o hacer clic en el menú con mouse/dedo, limpia el foco de control hasta volver a usar el mando
+// Al tocar o hacer clic en el menú con mouse/dedo, limpia el foco hasta volver a usar teclado/mando
 if (overlayEl) {
     overlayEl.addEventListener("pointerdown", () => {
-        if (gamepadUiActive) {
+        if (navInputMode !== "NONE") {
             clearGamepadFocusVisual();
+            if (navInputMode === "KEYBOARD") navInputMode = "NONE";
         }
     }, { passive: true });
 }
@@ -2382,7 +2384,7 @@ inputController = setupInputs({
     confirmMenuAction,
     startNewGame,
     goToMainMenu,
-    onGamepadActivity: setGamepadUiActive,
+    onGamepadActivity: setNavInputMode,
     onGamepadNotice: (title, sub, color) => showMilestoneBanner(title, sub, color)
 });
 
