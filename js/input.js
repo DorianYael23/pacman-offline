@@ -17,7 +17,13 @@ export function setupInputs({
     triggerDash,
     togglePause,
     toggleMute,
-    startMenuMusic
+    startMenuMusic,
+    cycleMode,
+    cycleMap,
+    confirmMenuAction,
+    startNewGame,
+    goToMainMenu,
+    onGamepadNotice
 }) {
     // Desbloquear música de menú si el navegador bloqueó el autoplay
     const unlockMenuAudio = (e) => {
@@ -289,4 +295,238 @@ export function setupInputs({
         dpadZone.addEventListener("lostpointercapture", () => releaseDpad(null));
         dpadButtons.forEach((b) => b.addEventListener("click", (e) => e.preventDefault()));
     }
+
+    // 4) Soporte nativo de controles / gamepads (Xbox, PlayStation, Switch, genéricos USB/Bluetooth)
+    const prevGamepadState = new Map();
+    let lastActiveGamepadIndex = -1;
+    let menuNavCooldownUntil = 0;
+
+    const getFriendlyGamepadName = (id = "") => {
+        const lower = id.toLowerCase();
+        if (lower.includes("xbox") || lower.includes("xinput") || lower.includes("045e")) {
+            return "Control Xbox listo";
+        }
+        if (lower.includes("dualsense") || lower.includes("dualshock") || lower.includes("playstation") || lower.includes("054c")) {
+            return "Control PlayStation listo";
+        }
+        if (lower.includes("nintendo") || lower.includes("switch") || lower.includes("pro controller") || lower.includes("057e")) {
+            return "Control Nintendo listo";
+        }
+        return "Mando listo para jugar";
+    };
+
+    const isBtnPressed = (gp, idx, threshold = 0.35) => {
+        const btn = gp.buttons && gp.buttons[idx];
+        if (!btn) return false;
+        return Boolean(btn.pressed || (typeof btn.value === "number" && btn.value > threshold));
+    };
+
+    window.addEventListener("gamepadconnected", (e) => {
+        if (!e.gamepad) return;
+        lastActiveGamepadIndex = e.gamepad.index;
+        prevGamepadState.set(e.gamepad.index, {});
+        if (onGamepadNotice) {
+            onGamepadNotice("🎮 CONTROL CONECTADO", getFriendlyGamepadName(e.gamepad.id), "#38bdf8");
+        }
+    });
+
+    window.addEventListener("gamepaddisconnected", (e) => {
+        if (!e.gamepad) return;
+        prevGamepadState.delete(e.gamepad.index);
+        if (lastActiveGamepadIndex === e.gamepad.index) {
+            lastActiveGamepadIndex = -1;
+        }
+        const wasPlaying = getState() === "PLAYING";
+        if (wasPlaying) {
+            togglePause();
+        }
+        if (onGamepadNotice) {
+            onGamepadNotice(
+                "🎮 CONTROL DESCONECTADO",
+                wasPlaying ? "Juego pausado automáticamente" : "Reconéctalo cuando quieras",
+                "#f97316"
+            );
+        }
+    });
+
+    function rumbleGamepad(durationMs = 80, strongMagnitude = 0.35, weakMagnitude = 0.5) {
+        if (!navigator.getGamepads) return;
+        const pads = navigator.getGamepads();
+        if (!pads) return;
+
+        let target = lastActiveGamepadIndex >= 0 ? pads[lastActiveGamepadIndex] : null;
+        if (!target) {
+            for (let i = 0; i < pads.length; i++) {
+                if (pads[i] && pads[i].connected) {
+                    target = pads[i];
+                    break;
+                }
+            }
+        }
+        if (!target) return;
+
+        const actuator = target.vibrationActuator || (target.hapticActuators && target.hapticActuators[0]);
+        if (!actuator) return;
+
+        try {
+            if (typeof actuator.playEffect === "function") {
+                actuator.playEffect("dual-rumble", {
+                    startDelay: 0,
+                    duration: durationMs,
+                    weakMagnitude: Math.min(1, Math.max(0, weakMagnitude)),
+                    strongMagnitude: Math.min(1, Math.max(0, strongMagnitude))
+                }).catch(() => { });
+            } else if (typeof actuator.pulse === "function") {
+                actuator.pulse(Math.min(1, Math.max(0, strongMagnitude)), durationMs).catch(() => { });
+            }
+        } catch (_) { }
+    }
+
+    function pollGamepad() {
+        if (!navigator.getGamepads) return;
+        const pads = navigator.getGamepads();
+        if (!pads) return;
+
+        const now = performance.now();
+
+        for (let i = 0; i < pads.length; i++) {
+            const gp = pads[i];
+            if (!gp || !gp.connected) continue;
+
+            const prev = prevGamepadState.get(gp.index) || {};
+            const stateNow = getState();
+
+            // Leer botones clave (estándar W3C: Xbox / PlayStation / Switch / genéricos)
+            const cur = {
+                a: isBtnPressed(gp, 0),
+                b: isBtnPressed(gp, 1),
+                x: isBtnPressed(gp, 2),
+                y: isBtnPressed(gp, 3),
+                lb: isBtnPressed(gp, 4),
+                rb: isBtnPressed(gp, 5),
+                lt: isBtnPressed(gp, 6, 0.4),
+                rt: isBtnPressed(gp, 7, 0.35),
+                back: isBtnPressed(gp, 8),
+                start: isBtnPressed(gp, 9),
+                up: isBtnPressed(gp, 12),
+                down: isBtnPressed(gp, 13),
+                left: isBtnPressed(gp, 14),
+                right: isBtnPressed(gp, 15)
+            };
+
+            const justPressed = (k) => cur[k] && !prev[k];
+
+            // Leer Stick izquierdo (ejes 0 y 1)
+            const axX = gp.axes && gp.axes.length > 0 ? gp.axes[0] : 0;
+            const axY = gp.axes && gp.axes.length > 1 ? gp.axes[1] : 0;
+            const stickMag = Math.hypot(axX, axY);
+            const stickDeadzone = 0.32;
+
+            const anyInput =
+                cur.a || cur.b || cur.x || cur.y || cur.lb || cur.rb ||
+                cur.rt || cur.back || cur.start || cur.up || cur.down ||
+                cur.left || cur.right || stickMag >= stickDeadzone;
+
+            if (anyInput) {
+                lastActiveGamepadIndex = gp.index;
+                if (stateNow === "MENU") {
+                    startMenuMusic();
+                }
+            }
+
+            // Silenciar / activar sonido con Back/View/Select (botón 8) en cualquier estado
+            if (justPressed("back")) {
+                toggleMute();
+            }
+
+            if (stateNow === "PLAYING" || stateNow === "READY") {
+                // Dirección: prioridad a Cruceta (D-Pad), luego Stick izquierdo con histéresis suave
+                if (cur.up) {
+                    setNextDirection(DIRS.UP);
+                } else if (cur.down) {
+                    setNextDirection(DIRS.DOWN);
+                } else if (cur.left) {
+                    setNextDirection(DIRS.LEFT);
+                } else if (cur.right) {
+                    setNextDirection(DIRS.RIGHT);
+                } else if (stickMag >= stickDeadzone) {
+                    const absX = Math.abs(axX);
+                    const absY = Math.abs(axY);
+                    const pac = getPacman();
+                    const isHorizontal = pac && pac.nextDir && pac.nextDir.x !== 0;
+                    const isVertical = pac && pac.nextDir && pac.nextDir.y !== 0;
+
+                    if (isHorizontal) {
+                        if (absY > absX * 1.12) {
+                            setNextDirection(axY > 0 ? DIRS.DOWN : DIRS.UP);
+                        } else {
+                            setNextDirection(axX > 0 ? DIRS.RIGHT : DIRS.LEFT);
+                        }
+                    } else if (isVertical) {
+                        if (absX > absY * 1.12) {
+                            setNextDirection(axX > 0 ? DIRS.RIGHT : DIRS.LEFT);
+                        } else {
+                            setNextDirection(axY > 0 ? DIRS.DOWN : DIRS.UP);
+                        }
+                    } else {
+                        setNextDirection(pickAxisDirection(axX, axY));
+                    }
+                }
+
+                // Turbo Dash con A, X, RB o RT
+                if (justPressed("a") || justPressed("x") || justPressed("rb") || justPressed("rt")) {
+                    triggerDash();
+                }
+
+                // Pausa con Start / Menu
+                if (justPressed("start")) {
+                    togglePause();
+                }
+            } else if (stateNow === "PAUSED") {
+                if (justPressed("start") || justPressed("a")) {
+                    togglePause();
+                } else if (justPressed("b") && goToMainMenu) {
+                    goToMainMenu();
+                } else if (justPressed("y") && startNewGame) {
+                    startNewGame();
+                }
+            } else if (stateNow === "MENU" || stateNow === "GAME_OVER") {
+                // Navegación de modos (Izquierda / Derecha)
+                const navLeft = cur.left || axX < -0.55;
+                const navRight = cur.right || axX > 0.55;
+                const navUp = cur.up || axY < -0.55;
+                const navDown = cur.down || axY > 0.55;
+
+                if (now >= menuNavCooldownUntil) {
+                    if (navLeft && cycleMode) {
+                        cycleMode(-1);
+                        menuNavCooldownUntil = now + 220;
+                    } else if (navRight && cycleMode) {
+                        cycleMode(1);
+                        menuNavCooldownUntil = now + 220;
+                    } else if ((navUp || cur.lb) && cycleMap) {
+                        cycleMap(-1);
+                        menuNavCooldownUntil = now + 210;
+                    } else if ((navDown || cur.rb) && cycleMap) {
+                        cycleMap(1);
+                        menuNavCooldownUntil = now + 210;
+                    }
+                }
+
+                // Confirmar (Continuar si hay partida guardada, si no Jugar)
+                if (justPressed("a") || justPressed("start")) {
+                    if (confirmMenuAction) confirmMenuAction();
+                } else if (justPressed("y") && startNewGame) {
+                    startNewGame();
+                }
+            }
+
+            prevGamepadState.set(gp.index, cur);
+        }
+    }
+
+    return {
+        pollGamepad,
+        rumbleGamepad
+    };
 }

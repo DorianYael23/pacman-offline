@@ -145,6 +145,8 @@ let ghosts = [];
 
 highScoreEl.textContent = highScore;
 
+let inputController = null;
+
 function vibrateShort(ms = 8) {
     const now = performance.now();
     if (now - lastVibrateAt < 55) return;
@@ -153,6 +155,11 @@ function vibrateShort(ms = 8) {
         try {
             navigator.vibrate(ms);
         } catch (_) { }
+    }
+    if (ms >= 15 && inputController && inputController.rumbleGamepad) {
+        const strong = ms >= 30 ? 0.65 : 0.28;
+        const weak = ms >= 30 ? 0.85 : 0.45;
+        inputController.rumbleGamepad(Math.min(240, ms * 5), strong, weak);
     }
 }
 
@@ -2205,7 +2212,32 @@ startBtn.addEventListener("click", () => startNewGame());
 pauseBtn.addEventListener("click", togglePause);
 muteBtn.addEventListener("click", toggleMute);
 
-setupInputs({
+const MODE_PRESETS = ["NORMAL", "POWERS", "CHAOS"];
+
+function cycleMode(delta) {
+    const curPreset = gameMode === "CHAOS" ? "CHAOS" : arcadeSubMode;
+    const idx = MODE_PRESETS.indexOf(curPreset);
+    const next = MODE_PRESETS[(idx + delta + MODE_PRESETS.length) % MODE_PRESETS.length];
+    applyModePreset(next);
+}
+
+function cycleMap(delta) {
+    if (gameMode !== "CHAOS") return;
+    const idx = MAP_OPTIONS.indexOf(selectedMapMode);
+    setSelectedMapMode(MAP_OPTIONS[(idx + delta + MAP_OPTIONS.length) % MAP_OPTIONS.length]);
+}
+
+function confirmMenuAction() {
+    if (state === "MENU" && continueBtn && !continueBtn.classList.contains("hidden")) {
+        if (!restoreSavedGame()) {
+            startNewGame();
+        }
+    } else {
+        startNewGame();
+    }
+}
+
+inputController = setupInputs({
     joystickZone,
     dpadZone,
     getState: () => state,
@@ -2215,7 +2247,13 @@ setupInputs({
     triggerDash,
     togglePause,
     toggleMute,
-    startMenuMusic
+    startMenuMusic,
+    cycleMode,
+    cycleMap,
+    confirmMenuAction,
+    startNewGame,
+    goToMainMenu,
+    onGamepadNotice: (title, sub, color) => showMilestoneBanner(title, sub, color)
 });
 
 // =========================================================================
@@ -2225,6 +2263,10 @@ function gameLoop(timestamp) {
     const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
     lastTime = timestamp;
     animTick += dt;
+
+    if (inputController && inputController.pollGamepad) {
+        inputController.pollGamepad();
+    }
 
     if (state === "READY") {
         stateTimer -= dt;
