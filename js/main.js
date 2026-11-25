@@ -5,6 +5,14 @@ import {
     DIRS,
     SCATTER_CORNERS,
     SAVE_KEY,
+    HIGHSCORES_KEY,
+    LEGACY_HIGHSCORE_KEY,
+    SKIN_KEY,
+    ACCESSORY_KEY,
+    TRAIL_KEY,
+    PACMAN_SKINS,
+    PACMAN_ACCESSORIES,
+    PACMAN_TRAILS,
     EXTRA_LIFE_STEP,
     START_LIVES,
     MAX_LIVES,
@@ -22,7 +30,7 @@ import { LEVELS, cloneMap } from "./maps.js";
 import { generateInfiniteLevel } from "./mapGenerator.js";
 import { SoundEngine } from "./audio.js";
 import { setupInputs } from "./input.js";
-import { renderGame } from "./renderer.js";
+import { renderGame, drawPacmanSprite, getCustomizerIconSvg } from "./renderer.js";
 
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
@@ -36,17 +44,32 @@ const menuCardEl = overlayEl ? overlayEl.querySelector(".menu-card") : null;
 const overlayTitleEl = document.getElementById("overlay-title");
 const overlaySubEl = document.getElementById("overlay-subtitle");
 const savedBannerEl = document.getElementById("saved-banner");
+const menuMainSectionEl = document.getElementById("menu-main-section");
 const menuConfigEl = document.getElementById("menu-config");
 const modeSelectorEl = menuConfigEl ? menuConfigEl.querySelector(".mode-selector") : null;
 const modeNormalBtn = document.getElementById("mode-normal-btn");
 const modePowersBtn = document.getElementById("mode-powers-btn");
 const modeChaosBtn = document.getElementById("mode-chaos-btn");
+const recordNormalEl = document.getElementById("record-normal");
+const recordPowersEl = document.getElementById("record-powers");
+const recordChaosEl = document.getElementById("record-chaos");
 const chaosMapWrap = document.getElementById("chaos-map-wrap");
 const mapPrevBtn = document.getElementById("map-prev-btn");
 const mapNextBtn = document.getElementById("map-next-btn");
 const mapCurrentBtn = document.getElementById("map-current-btn");
 const mapSwatchEl = document.getElementById("map-swatch");
 const mapCurrentNameEl = document.getElementById("map-current-name");
+const customizeOpenBtn = document.getElementById("customize-open-btn");
+const pacPreviewMiniEl = document.getElementById("pac-preview-mini");
+const customizeSummaryEl = document.getElementById("customize-summary");
+const customizerPanelEl = document.getElementById("customizer-panel");
+const pacPreviewCanvasEl = document.getElementById("pac-preview-canvas");
+const customizerPreviewLabelEl = document.getElementById("customizer-preview-label");
+const customSkinRowEl = document.getElementById("custom-skin-row");
+const customAccRowEl = document.getElementById("custom-acc-row");
+const customTrailRowEl = document.getElementById("custom-trail-row");
+const customizeRandomBtn = document.getElementById("customize-random-btn");
+const customizeDoneBtn = document.getElementById("customize-done-btn");
 const continueBtn = document.getElementById("continue-btn");
 const menuBtn = document.getElementById("menu-btn");
 const startBtn = document.getElementById("start-btn");
@@ -85,7 +108,74 @@ let activeGeneratedLevel = null;
 
 let grid = [];
 let score = 0;
-let highScore = Number(localStorage.getItem("pacman_offline_highscore") || 0);
+
+function getActiveModeKey() {
+    return gameMode === "CHAOS" ? "CHAOS" : arcadeSubMode;
+}
+
+function getModeDisplayName(modeKey) {
+    if (modeKey === "CHAOS") return "Caótico";
+    if (modeKey === "NORMAL") return "Normal";
+    return "Poderes";
+}
+
+function loadHighScores() {
+    const empty = { NORMAL: 0, POWERS: 0, CHAOS: 0 };
+    try {
+        const raw = localStorage.getItem(HIGHSCORES_KEY);
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            return {
+                NORMAL: Math.max(0, Number(parsed?.NORMAL) || 0),
+                POWERS: Math.max(0, Number(parsed?.POWERS) || 0),
+                CHAOS: Math.max(0, Number(parsed?.CHAOS) || 0)
+            };
+        }
+        const legacy = Math.max(0, Number(localStorage.getItem(LEGACY_HIGHSCORE_KEY) || 0));
+        if (legacy > 0) {
+            empty[getActiveModeKey()] = legacy;
+            localStorage.setItem(HIGHSCORES_KEY, JSON.stringify(empty));
+        }
+    } catch (_) { }
+    return empty;
+}
+
+let highScores = loadHighScores();
+let recordBrokenInRun = false;
+
+function getCurrentHighScore(modeKey = getActiveModeKey()) {
+    return highScores[modeKey] || 0;
+}
+
+function saveHighScores() {
+    try {
+        localStorage.setItem(HIGHSCORES_KEY, JSON.stringify(highScores));
+    } catch (_) { }
+}
+
+let pacmanSkinId = localStorage.getItem(SKIN_KEY) || PACMAN_SKINS[0].id;
+if (!PACMAN_SKINS.some((s) => s.id === pacmanSkinId)) pacmanSkinId = PACMAN_SKINS[0].id;
+
+let pacmanAccessoryId = localStorage.getItem(ACCESSORY_KEY) || PACMAN_ACCESSORIES[0].id;
+if (!PACMAN_ACCESSORIES.some((a) => a.id === pacmanAccessoryId)) {
+    pacmanAccessoryId = PACMAN_ACCESSORIES[0].id;
+}
+
+let pacmanTrailId = localStorage.getItem(TRAIL_KEY) || PACMAN_TRAILS[0].id;
+if (!PACMAN_TRAILS.some((t) => t.id === pacmanTrailId)) {
+    pacmanTrailId = PACMAN_TRAILS[0].id;
+}
+
+function getPacmanAppearance() {
+    return {
+        skinId: pacmanSkinId,
+        accessoryId: pacmanAccessoryId,
+        trailId: pacmanTrailId
+    };
+}
+
+let trailSpawnAccum = 0;
+
 let level = 1;
 let lives = START_LIVES;
 let nextExtraLifeScore = EXTRA_LIFE_STEP;
@@ -145,7 +235,7 @@ let pacman = {};
 let clonePacman = null;
 let ghosts = [];
 
-highScoreEl.textContent = highScore;
+highScoreEl.textContent = getCurrentHighScore();
 
 let inputController = null;
 
@@ -308,6 +398,7 @@ function applyModePreset(preset) {
 
     syncModeButtonsUI();
     syncPowersVisibility();
+    updateHUD();
 
     if (state === "MENU") {
         if (gameMode === "CHAOS" && selectedMapMode === "INFINITE") {
@@ -492,19 +583,45 @@ function updateStatusStrip() {
     powerBadgesEl.innerHTML = pills;
 }
 
+function updateRecordBadgesUI() {
+    if (recordNormalEl) recordNormalEl.textContent = `🏆 ${highScores.NORMAL.toLocaleString("es-ES")}`;
+    if (recordPowersEl) recordPowersEl.textContent = `🏆 ${highScores.POWERS.toLocaleString("es-ES")}`;
+    if (recordChaosEl) recordChaosEl.textContent = `🏆 ${highScores.CHAOS.toLocaleString("es-ES")}`;
+}
+
 function updateHUD() {
     scoreEl.textContent = score;
-    if (score > highScore) {
-        highScore = score;
-        localStorage.setItem("pacman_offline_highscore", highScore);
-    }
-    highScoreEl.textContent = highScore;
+    const modeKey = getActiveModeKey();
+    highScoreEl.textContent = getCurrentHighScore(modeKey);
+    updateRecordBadgesUI();
     levelEl.textContent = level;
-    livesEl.textContent = lives > 0 ? `🟡 ×${lives}` : "👻";
+
+    if (lives > 0) {
+        const skin = PACMAN_SKINS.find((s) => s.id === pacmanSkinId) || PACMAN_SKINS[0];
+        const borderCss = skin.strokeColor ? `border: 1.5px solid ${skin.strokeColor};` : "";
+        const iconStyle =
+            skin.color === "RAINBOW"
+                ? `background: conic-gradient(#facc15, #4ade80, #22d3ee, #f472b6, #fb923c, #facc15); ${borderCss}`
+                : `background: ${skin.color}; ${borderCss}`;
+        livesEl.innerHTML = `<span class="hud-lives-val"><span class="hud-pac-icon" style="${iconStyle}"></span>×${lives}</span>`;
+    } else {
+        livesEl.textContent = "👻";
+    }
 }
 
 function addScore(points, x, y, color = "#facc15") {
     score += points;
+    const modeKey = getActiveModeKey();
+    const prevRecord = getCurrentHighScore(modeKey);
+    if (score > prevRecord) {
+        highScores[modeKey] = score;
+        saveHighScores();
+        if (prevRecord > 0 && !recordBrokenInRun) {
+            recordBrokenInRun = true;
+            showMilestoneBanner("🏆 ¡NUEVO RÉCORD!", `${getModeDisplayName(modeKey)} • ${score.toLocaleString("es-ES")} pts`, "#facc15");
+            pulseHudElement(highScoreEl);
+        }
+    }
     while (score >= nextExtraLifeScore) {
         const milestone = nextExtraLifeScore;
         nextExtraLifeScore += EXTRA_LIFE_STEP;
@@ -678,7 +795,9 @@ function startNewGame() {
     sound.init();
     sound.stopIntro();
     clearSavedGame();
+    closeCustomizer(false);
     score = 0;
+    recordBrokenInRun = false;
     level = 1;
     lives = START_LIVES;
     nextExtraLifeScore = EXTRA_LIFE_STEP;
@@ -1082,6 +1201,68 @@ function updatePacman(dt) {
 
     if (dashTimer > 0 && pacman.dir !== DIRS.NONE) {
         dashTrail.push({ x: pacman.x, y: pacman.y, life: 0.22 });
+    }
+
+    if (state === "PLAYING" && pacman.dir !== DIRS.NONE && pacmanTrailId !== "classic") {
+        trailSpawnAccum += dt;
+        const interval = dashTimer > 0 ? 0.028 : 0.05;
+        if (trailSpawnAccum >= interval) {
+            trailSpawnAccum = 0;
+            const skin = PACMAN_SKINS.find((s) => s.id === pacmanSkinId) || PACMAN_SKINS[0];
+            const baseColor =
+                skin.color === "RAINBOW" ? `hsl(${(animTick * 150) % 360}, 94%, 62%)` : skin.strokeColor || skin.color;
+            const backX = pacman.x - pacman.dir.x * 8 + (Math.random() - 0.5) * 6;
+            const backY = pacman.y - pacman.dir.y * 8 + (Math.random() - 0.5) * 6;
+
+            if (pacmanTrailId === "fire") {
+                const fireColors = ["#fde047", "#fb923c", "#ef4444"];
+                particles.push({
+                    x: backX,
+                    y: backY,
+                    vx: -pacman.dir.x * 26 + (Math.random() - 0.5) * 24,
+                    vy: -pacman.dir.y * 26 + (Math.random() - 0.5) * 24 - 10,
+                    color: fireColors[Math.floor(Math.random() * fireColors.length)],
+                    size: 2 + Math.random() * 2.2,
+                    life: 0.28,
+                    maxLife: 0.28
+                });
+            } else if (pacmanTrailId === "pixel") {
+                particles.push({
+                    x: backX,
+                    y: backY,
+                    vx: -pacman.dir.x * 12,
+                    vy: -pacman.dir.y * 12,
+                    color: baseColor,
+                    size: 2.3 + Math.random() * 1.4,
+                    life: 0.3,
+                    maxLife: 0.3,
+                    shape: "square"
+                });
+            } else if (pacmanTrailId === "sparks") {
+                particles.push({
+                    x: backX,
+                    y: backY,
+                    vx: (Math.random() - 0.5) * 32,
+                    vy: (Math.random() - 0.5) * 32,
+                    color: Math.random() < 0.4 ? "#ffffff" : baseColor,
+                    size: 1.8 + Math.random() * 1.4,
+                    life: 0.32,
+                    maxLife: 0.32,
+                    shape: "spark"
+                });
+            } else if (pacmanTrailId === "glow") {
+                particles.push({
+                    x: pacman.x - pacman.dir.x * 6,
+                    y: pacman.y - pacman.dir.y * 6,
+                    vx: 0,
+                    vy: 0,
+                    color: baseColor,
+                    size: 3.4,
+                    life: 0.2,
+                    maxLife: 0.2
+                });
+            }
+        }
     }
 
     if (pacman.x < 0) pacman.x += COLS * TILE;
@@ -1950,6 +2131,7 @@ function restoreSavedGame() {
         : null;
 
     score = Math.max(0, Number(data.score) || 0);
+    recordBrokenInRun = score > 0 && score >= getCurrentHighScore();
     level = Math.max(1, Number(data.level) || 1);
     lives = Math.max(1, Math.min(MAX_LIVES, Number(data.lives) || START_LIVES));
     nextExtraLifeScore = Math.max(EXTRA_LIFE_STEP, Number(data.nextExtraLifeScore) || EXTRA_LIFE_STEP);
@@ -2073,6 +2255,7 @@ function goToMainMenu() {
         saveGameState();
     }
     state = "MENU";
+    closeCustomizer(false);
     sound.stopAllLoops();
     pauseBtn.classList.remove("is-paused");
     pauseLabelEl.textContent = "Pausar";
@@ -2084,11 +2267,14 @@ function goToMainMenu() {
 
 function refreshMenuOverlay() {
     const saved = readSavedGame();
+    closeCustomizer(false);
     overlayTitleEl.textContent = "PAC-MAN";
     overlaySubEl.textContent = "";
     overlaySubEl.classList.add("hidden");
     if (menuConfigEl) menuConfigEl.classList.remove("hidden");
     if (menuBtn) menuBtn.classList.add("hidden");
+    updateRecordBadgesUI();
+    updateHUD();
 
     if (saved) {
         const modeTag =
@@ -2122,6 +2308,7 @@ function refreshMenuOverlay() {
 
 function pauseForBackground() {
     if (state === "PLAYING" || state === "READY") {
+        closeCustomizer(false);
         state = "PAUSED";
         sound.stopAllLoops();
         saveGameState();
@@ -2162,6 +2349,7 @@ window.addEventListener("pagehide", () => {
 
 function togglePause() {
     if (state === "PLAYING" || state === "READY") {
+        closeCustomizer(false);
         state = "PAUSED";
         sound.stopAllLoops();
         saveGameState();
@@ -2226,13 +2414,218 @@ muteBtn.addEventListener("click", toggleMute);
 const MODE_PRESETS = ["NORMAL", "POWERS", "CHAOS"];
 let navInputMode = "NONE"; // "NONE" | "KEYBOARD" | "GAMEPAD"
 let focusedMenuKey = "START";
+let isCustomizing = false;
+let titleBeforeCustomize = "PAC-MAN";
+
+function setPacmanSkin(skinId) {
+    if (!PACMAN_SKINS.some((s) => s.id === skinId)) return;
+    pacmanSkinId = skinId;
+    localStorage.setItem(SKIN_KEY, skinId);
+    updateCustomizerUI();
+    updateHUD();
+}
+
+function setPacmanAccessory(accId) {
+    if (!PACMAN_ACCESSORIES.some((a) => a.id === accId)) return;
+    pacmanAccessoryId = accId;
+    localStorage.setItem(ACCESSORY_KEY, accId);
+    updateCustomizerUI();
+}
+
+function setPacmanTrail(trailId) {
+    if (!PACMAN_TRAILS.some((t) => t.id === trailId)) return;
+    pacmanTrailId = trailId;
+    localStorage.setItem(TRAIL_KEY, trailId);
+    updateCustomizerUI();
+}
+
+function randomizePacmanAppearance() {
+    const pick = (arr) => arr[Math.floor(Math.random() * arr.length)].id;
+    pacmanSkinId = pick(PACMAN_SKINS);
+    pacmanAccessoryId = pick(PACMAN_ACCESSORIES);
+    pacmanTrailId = pick(PACMAN_TRAILS);
+    localStorage.setItem(SKIN_KEY, pacmanSkinId);
+    localStorage.setItem(ACCESSORY_KEY, pacmanAccessoryId);
+    localStorage.setItem(TRAIL_KEY, pacmanTrailId);
+    updateCustomizerUI();
+    updateHUD();
+}
+
+function updateCustomizerUI() {
+    const skin = PACMAN_SKINS.find((s) => s.id === pacmanSkinId) || PACMAN_SKINS[0];
+    const acc = PACMAN_ACCESSORIES.find((a) => a.id === pacmanAccessoryId) || PACMAN_ACCESSORIES[0];
+    const trail = PACMAN_TRAILS.find((t) => t.id === pacmanTrailId) || PACMAN_TRAILS[0];
+
+    const parts = [skin.name];
+    if (acc.id !== "none") parts.push(acc.name);
+    if (trail.id !== "classic") parts.push(trail.name);
+    const labelText = parts.join(" • ");
+
+    if (customizeSummaryEl) customizeSummaryEl.textContent = labelText;
+    if (customizerPreviewLabelEl) customizerPreviewLabelEl.textContent = labelText;
+
+    if (customSkinRowEl) {
+        customSkinRowEl.querySelectorAll(".skin-swatch-btn").forEach((btn) => {
+            btn.classList.toggle("active", btn.dataset.skin === pacmanSkinId);
+        });
+    }
+    if (customAccRowEl) {
+        customAccRowEl.querySelectorAll(".acc-pill-btn").forEach((btn) => {
+            btn.classList.toggle("active", btn.dataset.acc === pacmanAccessoryId);
+        });
+    }
+    if (customTrailRowEl) {
+        customTrailRowEl.querySelectorAll(".acc-pill-btn").forEach((btn) => {
+            btn.classList.toggle("active", btn.dataset.trail === pacmanTrailId);
+        });
+    }
+    renderPacmanPreviews();
+}
+
+function populateCustomizerControls() {
+    if (customSkinRowEl) {
+        customSkinRowEl.innerHTML = "";
+        for (const skin of PACMAN_SKINS) {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "skin-swatch-btn";
+            btn.dataset.skin = skin.id;
+            btn.title = skin.name;
+            btn.setAttribute("aria-label", skin.name);
+
+            const dot = document.createElement("span");
+            dot.className = "skin-swatch-dot";
+            dot.style.background =
+                skin.color === "RAINBOW"
+                    ? "conic-gradient(#facc15, #4ade80, #22d3ee, #f472b6, #fb923c, #facc15)"
+                    : skin.color;
+            if (skin.strokeColor) {
+                dot.style.border = `2px solid ${skin.strokeColor}`;
+            }
+            btn.appendChild(dot);
+
+            btn.addEventListener("click", () => setPacmanSkin(skin.id));
+            customSkinRowEl.appendChild(btn);
+        }
+    }
+
+    if (customAccRowEl) {
+        customAccRowEl.innerHTML = "";
+        for (const acc of PACMAN_ACCESSORIES) {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "acc-pill-btn";
+            btn.dataset.acc = acc.id;
+            btn.title = acc.name;
+            btn.setAttribute("aria-label", acc.name);
+            btn.innerHTML = getCustomizerIconSvg("acc", acc.id);
+
+            btn.addEventListener("click", () => setPacmanAccessory(acc.id));
+            customAccRowEl.appendChild(btn);
+        }
+    }
+
+    if (customTrailRowEl) {
+        customTrailRowEl.innerHTML = "";
+        for (const trail of PACMAN_TRAILS) {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "acc-pill-btn";
+            btn.dataset.trail = trail.id;
+            btn.title = `Estela ${trail.name}`;
+            btn.setAttribute("aria-label", `Estela ${trail.name}`);
+            btn.innerHTML = getCustomizerIconSvg("trail", trail.id);
+
+            btn.addEventListener("click", () => setPacmanTrail(trail.id));
+            customTrailRowEl.appendChild(btn);
+        }
+    }
+
+    updateCustomizerUI();
+}
+
+function renderPacmanPreviews() {
+    const appearance = getPacmanAppearance();
+    const mouthAnim = animTick * 8;
+
+    if (pacPreviewMiniEl && menuMainSectionEl && !menuMainSectionEl.classList.contains("hidden")) {
+        const mCtx = pacPreviewMiniEl.getContext("2d");
+        mCtx.clearRect(0, 0, pacPreviewMiniEl.width, pacPreviewMiniEl.height);
+        drawPacmanSprite(
+            mCtx,
+            pacPreviewMiniEl.width / 2,
+            pacPreviewMiniEl.height / 2 + 1,
+            10,
+            0.95,
+            DIRS.RIGHT,
+            appearance,
+            { animTick }
+        );
+    }
+
+    if (pacPreviewCanvasEl && customizerPanelEl && !customizerPanelEl.classList.contains("hidden")) {
+        const pCtx = pacPreviewCanvasEl.getContext("2d");
+        pCtx.clearRect(0, 0, pacPreviewCanvasEl.width, pacPreviewCanvasEl.height);
+        const cx = pacPreviewCanvasEl.width / 2 + (pacmanTrailId !== "classic" ? 12 : 0);
+        drawPacmanSprite(
+            pCtx,
+            cx,
+            pacPreviewCanvasEl.height / 2 + 5,
+            23,
+            mouthAnim,
+            DIRS.RIGHT,
+            appearance,
+            { animTick, showPreviewTrail: true }
+        );
+    }
+}
+
+function openCustomizer() {
+    if (isCustomizing) return;
+    isCustomizing = true;
+    titleBeforeCustomize = overlayTitleEl.textContent || "PAC-MAN";
+    overlayTitleEl.textContent = "ESTILO";
+    if (menuMainSectionEl) menuMainSectionEl.classList.add("hidden");
+    if (customizerPanelEl) customizerPanelEl.classList.remove("hidden");
+    updateCustomizerUI();
+    updateGamepadOverlayUI("SKIN");
+}
+
+function closeCustomizer(restoreFocus = true) {
+    if (!isCustomizing) return;
+    isCustomizing = false;
+    overlayTitleEl.textContent = state === "GAME_OVER" ? "GAME OVER" : titleBeforeCustomize;
+    if (customizerPanelEl) customizerPanelEl.classList.add("hidden");
+    if (menuMainSectionEl) menuMainSectionEl.classList.remove("hidden");
+    renderPacmanPreviews();
+    if (restoreFocus) {
+        updateGamepadOverlayUI("CUSTOMIZE");
+    }
+}
+
+populateCustomizerControls();
+if (customizeOpenBtn) customizeOpenBtn.addEventListener("click", openCustomizer);
+if (customizeRandomBtn) customizeRandomBtn.addEventListener("click", randomizePacmanAppearance);
+if (customizeDoneBtn) customizeDoneBtn.addEventListener("click", () => closeCustomizer(true));
 
 function getVisibleOverlayItems() {
+    if (isCustomizing && customizerPanelEl && !customizerPanelEl.classList.contains("hidden")) {
+        return [
+            { key: "SKIN", el: customSkinRowEl },
+            { key: "ACC", el: customAccRowEl },
+            { key: "TRAIL", el: customTrailRowEl },
+            { key: "DONE", el: customizeDoneBtn }
+        ].filter((it) => it.el);
+    }
+
     const items = [];
     if (menuConfigEl && !menuConfigEl.classList.contains("hidden")) {
         if (modeSelectorEl) items.push({ key: "MODE", el: modeSelectorEl });
         if (chaosMapWrap && !chaosMapWrap.classList.contains("hidden")) {
             items.push({ key: "MAP", el: chaosMapWrap });
+        }
+        if (customizeOpenBtn && !customizeOpenBtn.classList.contains("hidden")) {
+            items.push({ key: "CUSTOMIZE", el: customizeOpenBtn });
         }
     }
     if (continueBtn && !continueBtn.classList.contains("hidden")) {
@@ -2248,7 +2641,18 @@ function getVisibleOverlayItems() {
 }
 
 function clearGamepadFocusVisual() {
-    const all = [modeSelectorEl, chaosMapWrap, continueBtn, menuBtn, startBtn];
+    const all = [
+        modeSelectorEl,
+        chaosMapWrap,
+        customizeOpenBtn,
+        continueBtn,
+        menuBtn,
+        startBtn,
+        customSkinRowEl,
+        customAccRowEl,
+        customTrailRowEl,
+        customizeDoneBtn
+    ];
     for (const el of all) {
         if (el) el.classList.remove("gamepad-focus");
     }
@@ -2270,7 +2674,9 @@ function updateGamepadOverlayUI(preferredKey = null) {
             gamepadHintEl.classList.add("hidden");
         } else {
             gamepadHintEl.classList.remove("hidden");
-            if (state === "PAUSED") {
+            if (isCustomizing) {
+                gamepadHintEl.textContent = "↕ Fila • ↔ Elegir • Ⓧ Aleatorio • Ⓐ/Ⓑ Listo";
+            } else if (state === "PAUSED") {
                 gamepadHintEl.textContent = "↕ Elegir • Ⓐ Aceptar • Ⓑ Menú • Ⓨ Nueva";
             } else if (gameMode === "CHAOS") {
                 gamepadHintEl.textContent = "↕ Elegir • ↔ Modo/Mapa • Ⓐ Aceptar • LB/RB Mapa";
@@ -2295,6 +2701,7 @@ function setNavInputMode(mode) {
 }
 
 function cycleMode(delta) {
+    if (isCustomizing) return;
     const curPreset = gameMode === "CHAOS" ? "CHAOS" : arcadeSubMode;
     const idx = MODE_PRESETS.indexOf(curPreset);
     const next = MODE_PRESETS[(idx + delta + MODE_PRESETS.length) % MODE_PRESETS.length];
@@ -2303,16 +2710,38 @@ function cycleMode(delta) {
 }
 
 function cycleMap(delta) {
-    if (gameMode !== "CHAOS") return;
+    if (isCustomizing || gameMode !== "CHAOS") return;
     const idx = MAP_OPTIONS.indexOf(selectedMapMode);
     setSelectedMapMode(MAP_OPTIONS[(idx + delta + MAP_OPTIONS.length) % MAP_OPTIONS.length]);
     updateGamepadOverlayUI();
 }
 
 function resetMapRandom() {
+    if (isCustomizing) {
+        randomizePacmanAppearance();
+        return;
+    }
     if (gameMode !== "CHAOS") return;
     setSelectedMapMode("RANDOM");
     updateGamepadOverlayUI();
+}
+
+function cycleSkin(delta) {
+    const idx = PACMAN_SKINS.findIndex((s) => s.id === pacmanSkinId);
+    const next = PACMAN_SKINS[(idx + delta + PACMAN_SKINS.length) % PACMAN_SKINS.length];
+    setPacmanSkin(next.id);
+}
+
+function cycleAccessory(delta) {
+    const idx = PACMAN_ACCESSORIES.findIndex((a) => a.id === pacmanAccessoryId);
+    const next = PACMAN_ACCESSORIES[(idx + delta + PACMAN_ACCESSORIES.length) % PACMAN_ACCESSORIES.length];
+    setPacmanAccessory(next.id);
+}
+
+function cycleTrail(delta) {
+    const idx = PACMAN_TRAILS.findIndex((t) => t.id === pacmanTrailId);
+    const next = PACMAN_TRAILS[(idx + delta + PACMAN_TRAILS.length) % PACMAN_TRAILS.length];
+    setPacmanTrail(next.id);
 }
 
 function navigateMenuVertical(delta) {
@@ -2325,6 +2754,12 @@ function navigateMenuVertical(delta) {
 }
 
 function navigateMenuHorizontal(delta) {
+    if (isCustomizing) {
+        if (focusedMenuKey === "ACC") cycleAccessory(delta);
+        else if (focusedMenuKey === "TRAIL") cycleTrail(delta);
+        else cycleSkin(delta);
+        return;
+    }
     if (focusedMenuKey === "MAP" && gameMode === "CHAOS") {
         cycleMap(delta);
     } else {
@@ -2333,6 +2768,10 @@ function navigateMenuHorizontal(delta) {
 }
 
 function confirmMenuAction() {
+    if (isCustomizing) {
+        closeCustomizer(true);
+        return;
+    }
     if (state === "MENU" && continueBtn && !continueBtn.classList.contains("hidden")) {
         if (!restoreSavedGame()) {
             startNewGame();
@@ -2342,8 +2781,28 @@ function confirmMenuAction() {
     }
 }
 
+function cancelMenuAction() {
+    if (isCustomizing) {
+        closeCustomizer(true);
+    }
+}
+
 function activateFocusedMenuItem() {
-    if (focusedMenuKey === "CONTINUE") {
+    if (isCustomizing) {
+        if (focusedMenuKey === "DONE") {
+            closeCustomizer(true);
+        } else if (focusedMenuKey === "ACC") {
+            cycleAccessory(1);
+        } else if (focusedMenuKey === "TRAIL") {
+            cycleTrail(1);
+        } else {
+            cycleSkin(1);
+        }
+        return;
+    }
+    if (focusedMenuKey === "CUSTOMIZE") {
+        openCustomizer();
+    } else if (focusedMenuKey === "CONTINUE") {
         if (state === "PAUSED") togglePause();
         else if (!restoreSavedGame()) startNewGame();
     } else if (focusedMenuKey === "MENU") {
@@ -2382,6 +2841,7 @@ inputController = setupInputs({
     resetMapRandom,
     activateFocusedMenuItem,
     confirmMenuAction,
+    cancelMenuAction,
     startNewGame,
     goToMainMenu,
     onGamepadActivity: setNavInputMode,
@@ -2423,9 +2883,11 @@ function gameLoop(timestamp) {
             if (lives <= 0) {
                 state = "GAME_OVER";
                 clearSavedGame();
+                closeCustomizer(false);
                 overlayTitleEl.textContent = "GAME OVER";
-                overlaySubEl.textContent = `Puntuación final: ${score} pts • Nivel ${level}`;
+                overlaySubEl.textContent = `${score} pts • Nivel ${level} • Récord (${getModeDisplayName(getActiveModeKey())}): ${getCurrentHighScore()}`;
                 overlaySubEl.classList.remove("hidden");
+                updateRecordBadgesUI();
                 if (savedBannerEl) savedBannerEl.classList.add("hidden");
                 if (menuConfigEl) menuConfigEl.classList.remove("hidden");
                 if (continueBtn) continueBtn.classList.add("hidden");
@@ -2486,6 +2948,7 @@ function gameLoop(timestamp) {
         particles,
         shockwaves,
         pacman,
+        pacmanAppearance: getPacmanAppearance(),
         clonePacman,
         dashTrail,
         dashTimer,
@@ -2498,6 +2961,10 @@ function gameLoop(timestamp) {
         floatingTexts,
         screenShake
     });
+
+    if (overlayEl && !overlayEl.classList.contains("hidden")) {
+        renderPacmanPreviews();
+    }
 
     requestAnimationFrame(gameLoop);
 }

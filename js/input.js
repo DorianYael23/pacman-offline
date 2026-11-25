@@ -24,6 +24,7 @@ export function setupInputs({
     resetMapRandom,
     activateFocusedMenuItem,
     confirmMenuAction,
+    cancelMenuAction,
     startNewGame,
     goToMainMenu,
     onGamepadActivity,
@@ -80,6 +81,8 @@ export function setupInputs({
                 e.preventDefault();
                 if (activateFocusedMenuItem) activateFocusedMenuItem();
                 else if (confirmMenuAction) confirmMenuAction();
+            } else if ((key === "escape" || key === "backspace") && cancelMenuAction) {
+                cancelMenuAction();
             } else if (key === "r" && resetMapRandom) {
                 resetMapRandom();
             }
@@ -595,10 +598,12 @@ export function setupInputs({
                     resetMapRandom();
                 }
 
-                // A ejecuta la opción resaltada; Start inicia/continúa directo; Y nueva partida
+                // A ejecuta la opción resaltada; Start inicia/continúa directo; B vuelve atrás si aplica; Y nueva partida
                 if (justPressed("a")) {
                     if (activateFocusedMenuItem) activateFocusedMenuItem();
                     else if (confirmMenuAction) confirmMenuAction();
+                } else if (justPressed("b") && cancelMenuAction) {
+                    cancelMenuAction();
                 } else if (justPressed("start")) {
                     if (confirmMenuAction) confirmMenuAction();
                 } else if (justPressed("y") && startNewGame) {

@@ -1,4 +1,4 @@
-import { TILE, COLS, ROWS, DIRS } from "./constants.js";
+import { TILE, COLS, ROWS, DIRS, PACMAN_SKINS } from "./constants.js";
 
 function drawMaze(ctx, canvas, stateObj) {
     const { grid, levelConfig, animTick, freezeTimer, frightenedTimer } = stateObj;
@@ -359,12 +359,349 @@ function drawClonePacman(ctx, clonePacman, animTick) {
     ctx.restore();
 }
 
+function resolveSkinColor(skin, animTick, isDash = false) {
+    if (skin && skin.color === "RAINBOW") {
+        const hue = (animTick * 150) % 360;
+        return `hsl(${hue}, 94%, ${isDash ? 76 : 60}%)`;
+    }
+    if (isDash) return skin?.dashColor || "#fef08a";
+    return skin?.color || "#facc15";
+}
+
+function drawPacmanAccessory(ctx, r, accessoryId, face, animTick) {
+    if (!accessoryId || accessoryId === "none") return;
+
+    const isLeft = face === DIRS.LEFT;
+    const isUp = face === DIRS.UP;
+    const dirSign = isLeft ? -1 : 1;
+
+    ctx.save();
+    if (accessoryId === "shades") {
+        if (face === DIRS.RIGHT || face === DIRS.LEFT) {
+            ctx.scale(dirSign, 1);
+            ctx.strokeStyle = "#0f172a";
+            ctx.lineWidth = Math.max(1.5, r * 0.14);
+            ctx.beginPath();
+            ctx.moveTo(-0.36 * r, -0.32 * r);
+            ctx.lineTo(0.18 * r, -0.34 * r);
+            ctx.stroke();
+
+            ctx.fillStyle = "#090d16";
+            ctx.strokeStyle = "#38bdf8";
+            ctx.lineWidth = Math.max(1, r * 0.1);
+            ctx.beginPath();
+            ctx.roundRect(0.08 * r, -0.52 * r, 0.56 * r, 0.34 * r, Math.max(1.5, r * 0.1));
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.78)";
+            ctx.lineWidth = Math.max(1, r * 0.08);
+            ctx.beginPath();
+            ctx.moveTo(0.18 * r, -0.45 * r);
+            ctx.lineTo(0.32 * r, -0.25 * r);
+            ctx.stroke();
+        } else {
+            const yOff = isUp ? 0.14 * r : -0.3 * r;
+            ctx.fillStyle = "#090d16";
+            ctx.strokeStyle = "#38bdf8";
+            ctx.lineWidth = Math.max(1, r * 0.09);
+            ctx.beginPath();
+            ctx.roundRect(-0.54 * r, yOff - 0.16 * r, 0.44 * r, 0.3 * r, Math.max(1.2, r * 0.08));
+            ctx.roundRect(0.1 * r, yOff - 0.16 * r, 0.44 * r, 0.3 * r, Math.max(1.2, r * 0.08));
+            ctx.fill();
+            ctx.stroke();
+            ctx.strokeStyle = "#0f172a";
+            ctx.lineWidth = Math.max(1.4, r * 0.12);
+            ctx.beginPath();
+            ctx.moveTo(-0.1 * r, yOff);
+            ctx.lineTo(0.1 * r, yOff);
+            ctx.stroke();
+        }
+    } else if (accessoryId === "crown") {
+        if (isUp) {
+            ctx.translate(-0.55 * r, -0.68 * r);
+            ctx.rotate(-0.52);
+        } else {
+            ctx.translate(0, -0.92 * r);
+        }
+        ctx.fillStyle = "#fbbf24";
+        ctx.strokeStyle = "#fef08a";
+        ctx.lineWidth = Math.max(1, r * 0.1);
+        ctx.beginPath();
+        ctx.moveTo(-0.48 * r, 0.12 * r);
+        ctx.lineTo(-0.54 * r, -0.34 * r);
+        ctx.lineTo(-0.22 * r, -0.1 * r);
+        ctx.lineTo(0, -0.44 * r);
+        ctx.lineTo(0.22 * r, -0.1 * r);
+        ctx.lineTo(0.54 * r, -0.34 * r);
+        ctx.lineTo(0.48 * r, 0.12 * r);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = "#ef4444";
+        ctx.beginPath();
+        ctx.arc(0, -0.08 * r, Math.max(1.2, r * 0.11), 0, Math.PI * 2);
+        ctx.fill();
+    } else if (accessoryId === "cap") {
+        if (isUp) {
+            ctx.translate(-0.5 * r, -0.64 * r);
+            ctx.rotate(-0.48);
+        } else {
+            ctx.translate(0, -0.78 * r);
+            if (isLeft) ctx.scale(-1, 1);
+        }
+        ctx.fillStyle = "#ef4444";
+        ctx.strokeStyle = "#fee2e2";
+        ctx.lineWidth = Math.max(1, r * 0.08);
+        ctx.beginPath();
+        ctx.arc(0, 0.08 * r, 0.56 * r, Math.PI, 0);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = "#38bdf8";
+        ctx.beginPath();
+        ctx.moveTo(0.15 * r, 0.04 * r);
+        ctx.lineTo(0.86 * r, 0.12 * r);
+        ctx.quadraticCurveTo(0.66 * r, 0.24 * r, 0.1 * r, 0.14 * r);
+        ctx.closePath();
+        ctx.fill();
+    } else if (accessoryId === "bow") {
+        if (isUp) {
+            ctx.translate(0.54 * r, -0.68 * r);
+            ctx.rotate(0.48);
+        } else {
+            ctx.translate(-0.34 * r * dirSign, -0.82 * r);
+            ctx.rotate(-0.3 * dirSign);
+        }
+        ctx.fillStyle = "#ec4899";
+        ctx.strokeStyle = "#fbcfe8";
+        ctx.lineWidth = Math.max(1, r * 0.08);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-0.42 * r, -0.26 * r);
+        ctx.lineTo(-0.38 * r, 0.24 * r);
+        ctx.closePath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(0.42 * r, -0.26 * r);
+        ctx.lineTo(0.38 * r, 0.24 * r);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = "#f43f5e";
+        ctx.beginPath();
+        ctx.arc(0, 0, Math.max(1.5, r * 0.14), 0, Math.PI * 2);
+        ctx.fill();
+    } else if (accessoryId === "halo") {
+        const floatY = -1.24 * r + Math.sin(animTick * 5.2) * r * 0.07;
+        ctx.strokeStyle = "#fef08a";
+        ctx.shadowColor = "rgba(250, 204, 21, 0.9)";
+        ctx.shadowBlur = Math.max(4, r * 0.45);
+        ctx.lineWidth = Math.max(1.6, r * 0.16);
+        ctx.beginPath();
+        ctx.ellipse(0, floatY, 0.54 * r, 0.18 * r, 0, 0, Math.PI * 2);
+        ctx.stroke();
+    } else if (accessoryId === "horns") {
+        if (isUp) {
+            ctx.translate(-0.48 * r, -0.66 * r);
+            ctx.rotate(-0.45);
+        } else {
+            ctx.translate(0, -0.78 * r);
+        }
+        ctx.fillStyle = "#ef4444";
+        ctx.strokeStyle = "#fca5a5";
+        ctx.lineWidth = Math.max(1, r * 0.08);
+        for (const side of [-1, 1]) {
+            ctx.beginPath();
+            ctx.moveTo(side * 0.2 * r, 0.08 * r);
+            ctx.quadraticCurveTo(side * 0.52 * r, -0.15 * r, side * 0.42 * r, -0.52 * r);
+            ctx.quadraticCurveTo(side * 0.22 * r, -0.25 * r, side * 0.42 * r, 0.12 * r);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+        }
+    } else if (accessoryId === "headphones") {
+        ctx.strokeStyle = "#38bdf8";
+        ctx.lineWidth = Math.max(2, r * 0.19);
+        ctx.beginPath();
+        ctx.arc(0, -0.08 * r, 1.04 * r, Math.PI * 1.12, Math.PI * 1.88);
+        ctx.stroke();
+
+        ctx.fillStyle = "#1e293b";
+        ctx.strokeStyle = "#a855f7";
+        ctx.lineWidth = Math.max(1.2, r * 0.1);
+        if (face === DIRS.RIGHT || face === DIRS.LEFT) {
+            ctx.beginPath();
+            ctx.roundRect(-0.22 * r * dirSign - 0.18 * r, -0.28 * r, 0.36 * r, 0.54 * r, 0.14 * r);
+            ctx.fill();
+            ctx.stroke();
+        } else {
+            ctx.beginPath();
+            ctx.roundRect(-1.14 * r, -0.26 * r, 0.26 * r, 0.52 * r, 0.1 * r);
+            ctx.roundRect(0.88 * r, -0.26 * r, 0.26 * r, 0.52 * r, 0.1 * r);
+            ctx.fill();
+            ctx.stroke();
+        }
+    } else if (accessoryId === "tophat") {
+        if (isUp) {
+            ctx.translate(-0.54 * r, -0.68 * r);
+            ctx.rotate(-0.48);
+        } else {
+            ctx.translate(0, -0.84 * r);
+        }
+        ctx.fillStyle = "#1e293b";
+        ctx.strokeStyle = "#94a3b8";
+        ctx.lineWidth = Math.max(1, r * 0.08);
+        // Ala del sombrero
+        ctx.beginPath();
+        ctx.roundRect(-0.68 * r, -0.05 * r, 1.36 * r, 0.18 * r, 0.08 * r);
+        ctx.fill();
+        ctx.stroke();
+        // Copa
+        ctx.beginPath();
+        ctx.roundRect(-0.42 * r, -0.64 * r, 0.84 * r, 0.62 * r, 0.08 * r);
+        ctx.fill();
+        ctx.stroke();
+        // Banda dorada
+        ctx.fillStyle = "#facc15";
+        ctx.fillRect(-0.41 * r, -0.18 * r, 0.82 * r, 0.12 * r);
+    } else if (accessoryId === "bandana") {
+        const wave = Math.sin(animTick * 12) * 0.1 * r;
+        if (face === DIRS.RIGHT || face === DIRS.LEFT) {
+            ctx.scale(dirSign, 1);
+            // Cinta frontal
+            ctx.fillStyle = "#dc2626";
+            ctx.beginPath();
+            ctx.roundRect(-0.88 * r, -0.58 * r, 1.62 * r, 0.22 * r, 0.08 * r);
+            ctx.fill();
+            // Nudo y colas ondeando atrás
+            ctx.strokeStyle = "#ef4444";
+            ctx.lineWidth = Math.max(1.5, r * 0.15);
+            ctx.lineCap = "round";
+            ctx.beginPath();
+            ctx.moveTo(-0.82 * r, -0.46 * r);
+            ctx.quadraticCurveTo(-1.12 * r, -0.58 * r + wave, -1.35 * r, -0.4 * r - wave);
+            ctx.moveTo(-0.82 * r, -0.42 * r);
+            ctx.quadraticCurveTo(-1.08 * r, -0.25 * r - wave, -1.28 * r, -0.16 * r + wave);
+            ctx.stroke();
+        } else {
+            const bandY = isUp ? 0.34 * r : -0.54 * r;
+            ctx.fillStyle = "#dc2626";
+            ctx.beginPath();
+            ctx.roundRect(-0.92 * r, bandY, 1.84 * r, 0.2 * r, 0.08 * r);
+            ctx.fill();
+        }
+    }
+    ctx.restore();
+}
+
+export function drawPacmanSprite(ctx, x, y, radius, mouth, facingDir, appearance = {}, options = {}) {
+    const skin = PACMAN_SKINS.find((s) => s.id === appearance?.skinId) || PACMAN_SKINS[0];
+    const trailId = appearance?.trailId || "classic";
+    const animTick = options.animTick || 0;
+    const isDash = !!options.isDash;
+    const bodyColor = resolveSkinColor(skin, animTick, isDash);
+
+    const angleOffset = Math.abs(Math.sin(mouth)) * 0.28 * Math.PI;
+    const face = facingDir || DIRS.RIGHT;
+    let rotation = 0;
+    if (face === DIRS.DOWN) rotation = Math.PI / 2;
+    else if (face === DIRS.LEFT) rotation = Math.PI;
+    else if (face === DIRS.UP) rotation = -Math.PI / 2;
+
+    ctx.save();
+    ctx.translate(x, y);
+
+    if (options.showPreviewTrail && trailId !== "classic") {
+        for (let i = 3; i >= 1; i--) {
+            const tx = -i * radius * 0.48;
+            const ty = Math.sin(animTick * 7 + i * 1.4) * radius * 0.12;
+            ctx.save();
+            ctx.globalAlpha = 0.24 * (4 - i);
+            if (trailId === "pixel") {
+                ctx.fillStyle = bodyColor;
+                const s = radius * (0.38 - i * 0.07);
+                ctx.fillRect(tx - s, ty - s, s * 2, s * 2);
+            } else if (trailId === "fire") {
+                ctx.fillStyle = i === 1 ? "#fde047" : i === 2 ? "#f97316" : "#ef4444";
+                ctx.beginPath();
+                ctx.arc(tx, ty, radius * (0.32 - i * 0.06), 0, Math.PI * 2);
+                ctx.fill();
+            } else if (trailId === "sparks") {
+                ctx.fillStyle = i % 2 === 0 ? "#fef08a" : bodyColor;
+                const sr = radius * (0.28 - i * 0.04);
+                ctx.beginPath();
+                ctx.moveTo(tx, ty - sr);
+                ctx.lineTo(tx + sr * 0.4, ty - sr * 0.4);
+                ctx.lineTo(tx + sr, ty);
+                ctx.lineTo(tx + sr * 0.4, ty + sr * 0.4);
+                ctx.lineTo(tx, ty + sr);
+                ctx.lineTo(tx - sr * 0.4, ty + sr * 0.4);
+                ctx.lineTo(tx - sr, ty);
+                ctx.lineTo(tx - sr * 0.4, ty - sr * 0.4);
+                ctx.closePath();
+                ctx.fill();
+            } else if (trailId === "glow") {
+                ctx.fillStyle = bodyColor;
+                ctx.beginPath();
+                ctx.arc(tx, ty, radius * (0.36 - i * 0.06), 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+    }
+
+    if (trailId === "glow") {
+        ctx.save();
+        ctx.strokeStyle = `rgba(${skin.trailRgb || "250, 204, 21"}, 0.48)`;
+        ctx.lineWidth = Math.max(1.5, radius * 0.14);
+        ctx.beginPath();
+        ctx.arc(0, 0, radius * 1.18, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    ctx.save();
+    ctx.rotate(rotation);
+    ctx.fillStyle = bodyColor;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, radius, angleOffset, Math.PI * 2 - angleOffset);
+    ctx.closePath();
+    ctx.fill();
+    if (skin.strokeColor) {
+        ctx.strokeStyle = skin.strokeColor;
+        ctx.lineWidth = Math.max(1.4, radius * 0.12);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    drawPacmanAccessory(ctx, radius, appearance?.accessoryId, face, animTick);
+    ctx.restore();
+}
+
 function drawPacman(ctx, stateObj) {
-    const { pacman, dashTrail, dashTimer, invulnTimer, state, stateTimer, magnetTimer, shieldActive, animTick } = stateObj;
+    const {
+        pacman,
+        pacmanAppearance,
+        dashTrail,
+        dashTimer,
+        invulnTimer,
+        state,
+        stateTimer,
+        magnetTimer,
+        shieldActive,
+        animTick
+    } = stateObj;
+
+    const skin = PACMAN_SKINS.find((s) => s.id === pacmanAppearance?.skinId) || PACMAN_SKINS[0];
+    const trailRgb = skin.trailRgb || "56, 189, 248";
 
     for (const t of dashTrail) {
         const alpha = Math.max(0, t.life / 0.22) * 0.45;
-        ctx.fillStyle = `rgba(56, 189, 248, ${alpha})`;
+        ctx.fillStyle = `rgba(${trailRgb}, ${alpha})`;
         ctx.beginPath();
         ctx.arc(t.x, t.y, TILE * 0.36, 0, Math.PI * 2);
         ctx.fill();
@@ -380,7 +717,7 @@ function drawPacman(ctx, stateObj) {
             ctx.save();
             ctx.translate(pacman.x, pacman.y);
             ctx.rotate(-Math.PI / 2);
-            ctx.fillStyle = "#facc15";
+            ctx.fillStyle = resolveSkinColor(skin, animTick, false);
             ctx.beginPath();
             ctx.moveTo(0, 0);
             ctx.arc(0, 0, TILE * 0.43, startA, endA);
@@ -410,23 +747,10 @@ function drawPacman(ctx, stateObj) {
         ctx.stroke();
     }
 
-    const angleOffset = Math.abs(Math.sin(pacman.mouth)) * 0.28 * Math.PI;
-    const face = pacman.facingDir || DIRS.RIGHT;
-    let rotation = 0;
-    if (face === DIRS.DOWN) rotation = Math.PI / 2;
-    else if (face === DIRS.LEFT) rotation = Math.PI;
-    else if (face === DIRS.UP) rotation = -Math.PI / 2;
-
-    ctx.save();
-    ctx.translate(pacman.x, pacman.y);
-    ctx.rotate(rotation);
-    ctx.fillStyle = dashTimer > 0 ? "#fef08a" : "#facc15";
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.arc(0, 0, TILE * 0.43, angleOffset, Math.PI * 2 - angleOffset);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
+    drawPacmanSprite(ctx, pacman.x, pacman.y, TILE * 0.43, pacman.mouth, pacman.facingDir, pacmanAppearance, {
+        animTick,
+        isDash: dashTimer > 0
+    });
 }
 
 function drawGhosts(ctx, stateObj) {
@@ -542,9 +866,26 @@ function drawParticlesAndWaves(ctx, particles, shockwaves) {
         ctx.save();
         ctx.globalAlpha = alpha;
         ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fill();
+        if (p.shape === "square") {
+            ctx.fillRect(p.x - p.size, p.y - p.size, p.size * 2, p.size * 2);
+        } else if (p.shape === "spark") {
+            const sr = p.size * 1.45;
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y - sr);
+            ctx.lineTo(p.x + sr * 0.35, p.y - sr * 0.35);
+            ctx.lineTo(p.x + sr, p.y);
+            ctx.lineTo(p.x + sr * 0.35, p.y + sr * 0.35);
+            ctx.lineTo(p.x, p.y + sr);
+            ctx.lineTo(p.x - sr * 0.35, p.y + sr * 0.35);
+            ctx.lineTo(p.x - sr, p.y);
+            ctx.lineTo(p.x - sr * 0.35, p.y - sr * 0.35);
+            ctx.closePath();
+            ctx.fill();
+        } else {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+        }
         ctx.restore();
     }
 }
@@ -566,6 +907,33 @@ function drawFloatingTexts(ctx, floatingTexts, dt) {
         ctx.fillText(ft.text, ft.x, ft.y);
         ctx.restore();
     }
+}
+
+const CUSTOMIZER_SVG_ICONS = {
+    acc: {
+        none: `<circle cx="14" cy="14" r="8" fill="none" stroke="#64748b" stroke-width="2.2"/><line x1="8.5" y1="19.5" x2="19.5" y2="8.5" stroke="#64748b" stroke-width="2.2" stroke-linecap="round"/>`,
+        shades: `<rect x="3" y="10" width="9.5" height="7" rx="2" fill="#090d16" stroke="#38bdf8" stroke-width="1.8"/><rect x="15.5" y="10" width="9.5" height="7" rx="2" fill="#090d16" stroke="#38bdf8" stroke-width="1.8"/><line x1="12.5" y1="12.5" x2="15.5" y2="12.5" stroke="#38bdf8" stroke-width="2"/><line x1="5" y1="12" x2="7.5" y2="15" stroke="#fff" stroke-width="1.3" stroke-linecap="round" opacity="0.8"/><line x1="17.5" y1="12" x2="20" y2="15" stroke="#fff" stroke-width="1.3" stroke-linecap="round" opacity="0.8"/>`,
+        crown: `<path d="M5 20L4 10l5.5 4L14 7l4.5 7L24 10l-1 10z" fill="#fbbf24" stroke="#fef08a" stroke-width="1.5" stroke-linejoin="round"/><circle cx="14" cy="15.5" r="1.8" fill="#ef4444"/>`,
+        cap: `<path d="M5 17a8 8 0 0 1 15.5-2.5L25 16.5c-1.8 2-5 2.5-10 2.5H5z" fill="#ef4444" stroke="#fee2e2" stroke-width="1.4" stroke-linejoin="round"/><path d="M13 15.2l12 1.3c-1.5 1.8-4.8 2.4-11.5 1.7z" fill="#38bdf8"/>`,
+        bow: `<path d="M14 14L6 8.5v11zM14 14l8-5.5v11z" fill="#ec4899" stroke="#fbcfe8" stroke-width="1.4" stroke-linejoin="round"/><circle cx="14" cy="14" r="2.6" fill="#f43f5e" stroke="#fbcfe8" stroke-width="1"/>`,
+        halo: `<ellipse cx="14" cy="14" rx="9" ry="3.8" fill="none" stroke="#fef08a" stroke-width="2.6"/><ellipse cx="14" cy="14" rx="9" ry="3.8" fill="none" stroke="#facc15" stroke-width="1" opacity="0.7"/>`,
+        horns: `<path d="M10 21c-3.5-2.5-4.5-8.5-2-14 0.5 4 2.5 6.5 4.2 8.2z" fill="#ef4444" stroke="#fca5a5" stroke-width="1.3" stroke-linejoin="round"/><path d="M18 21c3.5-2.5 4.5-8.5 2-14-0.5 4-2.5 6.5-4.2 8.2z" fill="#ef4444" stroke="#fca5a5" stroke-width="1.3" stroke-linejoin="round"/>`,
+        headphones: `<path d="M6.5 15a7.5 7.5 0 0 1 15 0" fill="none" stroke="#38bdf8" stroke-width="2.6" stroke-linecap="round"/><rect x="4" y="13" width="4.5" height="8" rx="2" fill="#1e293b" stroke="#a855f7" stroke-width="1.6"/><rect x="19.5" y="13" width="4.5" height="8" rx="2" fill="#1e293b" stroke="#a855f7" stroke-width="1.6"/>`,
+        tophat: `<rect x="4" y="19.5" width="20" height="3" rx="1.5" fill="#1e293b" stroke="#94a3b8" stroke-width="1.2"/><rect x="8" y="6.5" width="12" height="13" rx="1.5" fill="#1e293b" stroke="#94a3b8" stroke-width="1.2"/><rect x="8.3" y="16" width="11.4" height="2.4" fill="#facc15"/>`,
+        bandana: `<rect x="4" y="10" width="16" height="4.5" rx="1.5" fill="#dc2626"/><path d="M19 12.2c3-.8 4.5-2 6-1.5M19 13.5c2.5 1.2 4 3 5.5 2.5" fill="none" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round"/>`
+    },
+    trail: {
+        classic: `<line x1="5" y1="10" x2="17" y2="10" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-dasharray="3 3"/><line x1="8" y1="14" x2="22" y2="14" stroke="#94a3b8" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="4 3"/><line x1="5" y1="18" x2="17" y2="18" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-dasharray="3 3"/>`,
+        glow: `<circle cx="15" cy="14" r="8" fill="rgba(56, 189, 248, 0.2)" stroke="#38bdf8" stroke-width="1.8"/><circle cx="15" cy="14" r="4.2" fill="#7dd3fc"/><circle cx="7" cy="14" r="2.2" fill="#38bdf8" opacity="0.65"/>`,
+        sparks: `<path d="M16 6l1.5 4.2L22 11.7l-4.5 1.5L16 17.5l-1.5-4.3L10 11.7l4.5-1.5z" fill="#fef08a"/><path d="M8 15l0.9 2.3L11.2 18l-2.3.8L8 21l-.8-2.2L5 18l2.2-.7z" fill="#38bdf8"/><circle cx="20.5" cy="20" r="1.5" fill="#f472b6"/>`,
+        pixel: `<rect x="15" y="9" width="7" height="7" rx="1" fill="#22d3ee"/><rect x="9" y="13" width="5" height="5" rx="0.8" fill="#4ade80" opacity="0.85"/><rect x="4.5" y="15.5" width="3.5" height="3.5" rx="0.6" fill="#facc15" opacity="0.7"/>`,
+        fire: `<path d="M14 4.5c2.8 3.6 6.5 6.4 6.5 11a6.5 6.5 0 0 1-13 0c0-3 1.6-5.6 3.5-7.6.2 2 1.2 3 2.3 3.2-.6-2.5-.2-4.6.7-6.6z" fill="#ef4444"/><path d="M14 9.5c1.7 2.2 3.8 3.8 3.8 6.5a3.8 3.8 0 0 1-7.6 0c0-1.7.9-3.2 2-4.3.2 1.2.9 1.7 1.6 1.8-.3-1.4-.2-2.7.2-4z" fill="#fb923c"/><circle cx="14" cy="17" r="2" fill="#fde047"/>`
+    }
+};
+
+export function getCustomizerIconSvg(category, id) {
+    const body = CUSTOMIZER_SVG_ICONS[category]?.[id] || "";
+    return `<svg class="custom-opt-icon" viewBox="0 0 28 28" aria-hidden="true">${body}</svg>`;
 }
 
 export function renderGame(ctx, canvas, dt, stateObj) {

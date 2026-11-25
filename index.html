@@ -61,40 +61,91 @@
               <p id="overlay-subtitle" class="hidden"></p>
             </div>
 
-            <div id="saved-banner" class="saved-banner hidden"></div>
+            <div id="menu-main-section" class="menu-main-section">
+              <div id="saved-banner" class="saved-banner hidden"></div>
 
-            <div id="menu-config" class="menu-config">
-              <div class="mode-selector" role="radiogroup" aria-label="Modo de juego">
-                <button type="button" id="mode-normal-btn" class="mode-pill" data-preset="NORMAL">
-                  <span class="mode-icon">🟡</span>
-                  <span class="mode-name">Normal</span>
-                </button>
-                <button type="button" id="mode-powers-btn" class="mode-pill active" data-preset="POWERS">
-                  <span class="mode-icon">⚡</span>
-                  <span class="mode-name">Poderes</span>
-                </button>
-                <button type="button" id="mode-chaos-btn" class="mode-pill" data-preset="CHAOS">
-                  <span class="mode-icon">🔥</span>
-                  <span class="mode-name">Caótico</span>
+              <div id="menu-config" class="menu-config">
+                <div class="mode-selector" role="radiogroup" aria-label="Modo de juego">
+                  <button type="button" id="mode-normal-btn" class="mode-pill" data-preset="NORMAL">
+                    <span class="mode-icon">🟡</span>
+                    <span class="mode-name">Normal</span>
+                    <span id="record-normal" class="mode-record">🏆 0</span>
+                  </button>
+                  <button type="button" id="mode-powers-btn" class="mode-pill active" data-preset="POWERS">
+                    <span class="mode-icon">⚡</span>
+                    <span class="mode-name">Poderes</span>
+                    <span id="record-powers" class="mode-record">🏆 0</span>
+                  </button>
+                  <button type="button" id="mode-chaos-btn" class="mode-pill" data-preset="CHAOS">
+                    <span class="mode-icon">🔥</span>
+                    <span class="mode-name">Caótico</span>
+                    <span id="record-chaos" class="mode-record">🏆 0</span>
+                  </button>
+                </div>
+
+                <!-- Selector compacto de mapa solo para Modo Caótico -->
+                <div id="chaos-map-wrap" class="map-picker hidden" aria-label="Selector de laberinto">
+                  <button type="button" id="map-prev-btn" class="map-nav-btn" aria-label="Mapa anterior">◀</button>
+                  <button type="button" id="map-current-btn" class="map-current-display" title="Toca para volver a Aleatorio">
+                    <span id="map-swatch" class="map-swatch"></span>
+                    <span id="map-current-name" class="map-current-name">🎲 Aleatorio</span>
+                  </button>
+                  <button type="button" id="map-next-btn" class="map-nav-btn" aria-label="Mapa siguiente">▶</button>
+                </div>
+
+                <!-- Botón compacto para personalizar Pac-Man -->
+                <button type="button" id="customize-open-btn" class="customize-entry">
+                  <canvas id="pac-preview-mini" width="34" height="34" aria-hidden="true"></canvas>
+                  <span class="customize-entry-text">
+                    <span class="customize-entry-title">Personalizar Pac-Man</span>
+                    <span id="customize-summary" class="customize-entry-sub">Clásico</span>
+                  </span>
+                  <span class="customize-entry-arrow">›</span>
                 </button>
               </div>
 
-              <!-- Selector compacto de mapa solo para Modo Caótico -->
-              <div id="chaos-map-wrap" class="map-picker hidden" aria-label="Selector de laberinto">
-                <button type="button" id="map-prev-btn" class="map-nav-btn" aria-label="Mapa anterior">◀</button>
-                <button type="button" id="map-current-btn" class="map-current-display" title="Toca para volver a Aleatorio">
-                  <span id="map-swatch" class="map-swatch"></span>
-                  <span id="map-current-name" class="map-current-name">🎲 Aleatorio</span>
-                </button>
-                <button type="button" id="map-next-btn" class="map-nav-btn" aria-label="Mapa siguiente">▶</button>
+              <div class="overlay-actions">
+                <button id="continue-btn" class="btn-primary hidden">▶ CONTINUAR PARTIDA</button>
+                <button id="menu-btn" class="btn-secondary hidden">🏠 MENÚ PRINCIPAL</button>
+                <button id="start-btn" class="btn-primary">▶ JUGAR</button>
               </div>
             </div>
 
-            <div class="overlay-actions">
-              <button id="continue-btn" class="btn-primary hidden">▶ CONTINUAR PARTIDA</button>
-              <button id="menu-btn" class="btn-secondary hidden">🏠 MENÚ PRINCIPAL</button>
-              <button id="start-btn" class="btn-primary">▶ JUGAR</button>
+            <!-- Panel limpio para personalizar Pac-Man -->
+            <div id="customizer-panel" class="customizer-panel hidden">
+              <div class="customizer-preview-box">
+                <button type="button" id="customize-random-btn" class="custom-rand-btn" title="Combinación aleatoria" aria-label="Combinación aleatoria">
+                  <svg class="custom-opt-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="3.5" y="3.5" width="17" height="17" rx="4" fill="#0f172a" stroke="#38bdf8" stroke-width="1.8"/>
+                    <circle cx="8" cy="8" r="1.5" fill="#facc15"/>
+                    <circle cx="16" cy="8" r="1.5" fill="#facc15"/>
+                    <circle cx="12" cy="12" r="1.5" fill="#facc15"/>
+                    <circle cx="8" cy="16" r="1.5" fill="#facc15"/>
+                    <circle cx="16" cy="16" r="1.5" fill="#facc15"/>
+                  </svg>
+                </button>
+                <canvas id="pac-preview-canvas" width="116" height="84" aria-label="Vista previa de Pac-Man"></canvas>
+                <span id="customizer-preview-label" class="customizer-preview-label">Clásico</span>
+              </div>
+
+              <div class="customizer-group">
+                <span class="customizer-label">Color</span>
+                <div id="custom-skin-row" class="custom-skin-row" role="radiogroup" aria-label="Color de Pac-Man"></div>
+              </div>
+
+              <div class="customizer-group">
+                <span class="customizer-label">Accesorio</span>
+                <div id="custom-acc-row" class="custom-acc-row" role="radiogroup" aria-label="Accesorio de Pac-Man"></div>
+              </div>
+
+              <div class="customizer-group">
+                <span class="customizer-label">Estela</span>
+                <div id="custom-trail-row" class="custom-mini-row" role="radiogroup" aria-label="Estela de Pac-Man"></div>
+              </div>
+
+              <button type="button" id="customize-done-btn" class="btn-primary">✔ LISTO</button>
             </div>
+
             <p id="gamepad-hint" class="gamepad-hint hidden" aria-hidden="true"></p>
           </div>
         </div>

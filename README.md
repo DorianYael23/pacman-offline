@@ -7,10 +7,11 @@ Versión moderna, **mobile-first** y **100% offline (PWA)** del clásico Pac-Man
 ## ✨ Características principales
 
 - 📱 **Diseñado para móvil y PC:** interfaz adaptable (`100dvh`) sin scroll accidental, optimizada para jugar en vertical u horizontal en teléfonos y en escritorio.
-- 🕹️ **Modos de juego en un menú interactivo:**
-  - **Arcade — 🟡 Normal (Clásico Puro):** recorre los 10 niveles de forma secuencial sin poderes ni Turbo, solo puntos, frutas dulces y 1-UP cada 10,000 pts.
-  - **Arcade — ⚡ Poderes:** recorre los 10 niveles con todas las mecánicas modernas (Turbo Dash, Racha Combo, Hielo, Imán, Escudo, Corazones de Vida y frutas tóxicas).
-  - **🔥 Modo Caótico:** incluye selector de **Mapa Aleatorio** (sin repetir el recién jugado) o cualquier mapa inicial de los 10 disponibles, **muros internos destructibles**, **lluvia de poderes cada 14s**, **Bombas Destructoras** y un **5.º fantasma caótico veloz** durante 14 segundos. Al ganar cada nivel cambia automáticamente al siguiente mapa.
+- 🕹️ **Modos de juego con récord independiente:** cada modo (**Normal**, **Poderes** y **Caótico**) guarda su propio récord por separado.
+  - **🟡 Normal (Clásico Puro):** recorre los 10 niveles de forma secuencial sin poderes ni Turbo, solo puntos, frutas dulces y 1-UP cada 10,000 pts (luego avanza a mapas infinitos).
+  - **⚡ Poderes:** recorre los 10 niveles con todas las mecánicas modernas (Turbo Dash, Racha Combo, Hielo, Imán, Escudo, Píldora Pac-Man, Corazones de Vida y frutas tóxicas).
+  - **🔥 Modo Caótico:** incluye selector de **Mapa Aleatorio** (sin repetir el recién jugado), **♾️ Mapas Infinitos** o cualquiera de los 10 mapas, **muros internos destructibles**, **lluvia de poderes cada 14s**, **Bombas Destructoras**, **5.º fantasma caótico** y **Titán Destructor**.
+- 🎨 **Personalización de Pac-Man:** combina libremente **10 colores/skins** (*Clásico, Ciber Neón, Neón Rosa, Esmeralda, Fuego, Carmesí, Ultravioleta, Glacial, Sombra Neón y Prisma arcoíris*), **10 accesorios** (*Lentes Cool, Corona, Gorra, Moño, Aura, Cuernos, Audífonos, Sombrero, Bandana Ninja o ninguno*) y **5 estelas al moverte** (*Normal, Aura Neón, Chispas, Retro Pixel y Fuego*), con íconos SVG propios, botón Aleatorio y vista previa animada en vivo.
 - 🌈 **10 laberintos neón dinámicos (`19 × 21`):** *Clásico Neón*, *Ciber Púrpura*, *Fortaleza Esmeralda*, *Núcleo Solar*, *Espiral Carmesí*, *Abismo Cian*, *Circuito Neón*, *Arena Diamante*, *Templo Magenta* y *Núcleo Caos* — todos validados sin callejones sin salida (*dead-ends*) ni pasillos dobles (`2×2`), con paredes conectadas, cuadrícula luminosa, puerta láser y túneles señalizados.
 - 💾 **Auto-guardado tipo app nativa:** al salir de la app, cambiar de pestaña o bloquear el teléfono (`visibilitychange` / `pagehide`), la partida se pausa y guarda automáticamente en `localStorage` (`pacman_offline_savestate`). Al volver, puedes elegir **▶ CONTINUAR PARTIDA** o **↻ NUEVA PARTIDA**.
 - 🎮 **3 modos de control táctil** intercambiables en cualquier momento:

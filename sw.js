@@ -1,4 +1,4 @@
-const CACHE_NAME = "pacman-offline-v51";
+const CACHE_NAME = "pacman-offline-v55";
 const CORE_ASSETS = [
     "./",
     "./index.html",
